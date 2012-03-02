@@ -19,10 +19,15 @@ This package contains several tools:
     
     - Python 2.7 on your local machine
     - an SSH server on your seedbox, and a user account there
-    - the command torrentinfo-console from the BitTorrent software, installed
-      on the seedbox
     - an SSH client on your local machine
     - rsync on both machines
+    - if you are using TorrentFlux-b4rt on your seedbox:
+        * the command torrentinfo-console from the BitTorrent package, installed
+          on the seedbox
+        * the command fluxcli installed and operational on the seedbox
+    - if you are using Transmission on your seedbox:
+        * the command transmission-remote from the Transmission package,
+          installed on your local machine
 
 == Installation ==
 
@@ -50,4 +55,14 @@ answer a few questions:
     
     seedboxsetup
 
+The script will explain the most common error conditions, such as unavailable
+programs or directories in the remote host not accessible.
+
+Notes:
+    
+    Both TorrentFlux and Transmission protect their download and torrent
+    directories using permissions.  You should become part of the UNIX group
+    they use to protect those directories, and change the permissions
+    accordingly so you have at least read and list permissions (rx).
+    
 == How to run the script periodically ==
