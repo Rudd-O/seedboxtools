@@ -29,7 +29,7 @@ torrentleecher_lockfile = ".torrentleecher.lock"
 fluxcli = "fluxcli"
 torrentinfo = "torrentinfo-console"
 
-from torrentfetcher.util import shell_quote
+from seedboxtools.util import shell_quote
 def getstdout(cmdline):
 	p = Popen(cmdline,stdout=PIPE)
 	output = p.communicate()[0]
