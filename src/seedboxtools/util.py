@@ -18,3 +18,15 @@ def getstdoutstderr(cmdline,inp=None): # return stoud and stderr in a single str
         return output
 
 def passthru(cmdline): return call(cmdline) # return status code, pass the outputs thru
+
+def quote_cmdline(cmdline):
+    """Quote a command line in list form for SSH usage"""
+    return " ".join(shell_quote(x) for x in cmdline)
+
+def ssh_getstdout(hostname,cmdline):
+    cmd = quote_cmdline(cmdline)
+    return getstdout(["ssh","-o","BatchMode yes","-o","ForwardX11 no",hostname,cmd] )
+
+def ssh_passthru(hostname,cmdline):
+    cmd = quote_cmdline(cmdline)
+    return call(["ssh","-o","BatchMode yes","-o","ForwardX11 no",hostname,cmd] )
