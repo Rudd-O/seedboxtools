@@ -1,0 +1,7 @@
+
+
+== Requirements ==
+    
+    - an SSH server on your seedbox
+    - an SSH client on your local machine
+    - rsync on both sides
