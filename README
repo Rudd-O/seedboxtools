@@ -42,7 +42,7 @@ You can also run it directly from the unpacked source directory:
 
 == Configuration ==
 
-Both tools require some configuration after installation.  This comes with a
+Both tools require some configuration after installation.  There is a nifty
 configuration wizard that will set the configuration file up.  Run it and
 answer a few questions:
     
