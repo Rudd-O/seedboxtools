@@ -1,7 +1,49 @@
+=== Seedbox tools ===
 
+Seedbox tools is a software package that automates the process of fetching
+finished torrents from your seedbox, and dispatching new torrents on your
+seedbox as well.
+
+== Package contents ==
+
+This package contains several tools:
+    
+    1. leechtorrents: a tool that leeches finished downloads from a torrent
+       seedbox to your local computer.
+    2. dispatchtorrent: a tool that uploads a torrent file or magnet URL
+       to a seedbox, telling the seedbox to start downloading.
+    3. seedboxsetup: a configuration wizard to set up the clients to work
+       properly against your seedbox.
 
 == Requirements ==
     
-    - an SSH server on your seedbox
+    - Python 2.7 on your local machine
+    - an SSH server on your seedbox, and a user account there
     - an SSH client on your local machine
-    - rsync on both sides
+    - rsync on both machines
+
+== Installation ==
+
+You will need to install this package on your local machine.
+
+If you are on an RPM-based distribution, build an RPM from the source package
+and install the resulting RPM:
+    
+    python setup.py bdist_rpm
+
+Otherwise, just use the standard Python installation system:
+
+    python setup.py install
+
+You can also run it directly from the unpacked source directory:
+    
+    export PYTHONPATH=src
+    bin/leechtorrents --help
+
+== Configuration ==
+
+Both tools require some configuration after installation.  This comes with a
+configuration wizard that will set the configuration file up.  Run it and
+answer a few questions:
+    
+    seedboxsetup
