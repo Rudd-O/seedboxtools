@@ -3,7 +3,8 @@
 
 # assert False
 
-from seedboxtools.util import shell_quote, getstdout, getstdoutstderr, passthru, getssh, sshpassthru, call
+from seedboxtools.util import shell_quote, getstdout, getstdoutstderr, passthru
+from seedboxtools import TorrentFluxClient, TransmissionClient
 import fcntl
 import re
 import os
@@ -14,29 +15,26 @@ from threading import Thread
 import optparse
 import traceback
 
-
 #FIXME: this script doesn't deal with multifile torrents
-# vars!
-# wherever they are used, it's MOST LIKELY they need quoting
-# FIXME whatever calls SSH remoting needs to protect/quote the commands for spaces or else this might turn out to be a bitch
-torrentflux_base_dir = "/var/torrents"
-torrentflux_download_dir = "/var/torrents/incoming"
-# torrentflux_server = "192.168.3.1" # below now
-torrentflux_server = "torrentserver.com"
-torrentleecher_destdir = "/export/shared/Incoming/Seedbox"
 torrentleecher_logfile = ".torrentleecher.log"
 torrentleecher_lockfile = ".torrentleecher.lock"
-torrentinfo = "torrentinfo-console"
-
-def getssh(cmd): return getstdout(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return stdout of ssh.  doesn't return stderr
-def sshpassthru(cmd): return call(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return status code from a command executed using ssh
 
 client = TorrentFluxClient(
     local_download_dir = "/export/shared/Incoming/Seedbox",
     hostname = "torrentserver.com",
     base_dir = "/var/torrents",
-    download_dir = "/var/torrents/incoming",
+    incoming_dir = "/var/torrents/incoming",
     fluxcli_path = "fluxcli",
+    torrentinfo_path = "torrentinfo-console",
+)
+client = TransmissionClient(
+    local_download_dir = ".home.user/tmp/seedbox",
+    hostname = "torrentserver.com",
+    torrents_dir = "/var/lib/transmission/torrents",
+    incoming_dir = "/var/lib/transmission/Downloads",
+    transmission_remote_path = "transmission-remote",
+    transmission_remote_user = "admin",
+    transmission_remote_password = "password",
     torrentinfo_path = "torrentinfo-console",
 )
 get_finished_torrents = client.get_finished_torrents
@@ -169,7 +167,7 @@ def speakize(filename):
 parser = optparse.OptionParser()
 parser.add_option(
     "-g", '--logfile',
-    help="redirect standard output and standard error to logfile %s in directory %s"%(torrentleecher_logfile,torrentleecher_destdir),
+    help="redirect standard output and standard error to logfile %s (relative to local download directory)"%(torrentleecher_logfile),
     action='store_true',dest='logfile',default=False,
 )
 parser.add_option(
@@ -216,9 +214,9 @@ def main():
         quiet = opts.quiet
         
         try:
-            os.chdir(torrentleecher_destdir)
+            os.chdir(client.local_download_dir)
         except (IOError,OSError), e:
-            report_error("Cannot change to directory %r: %s"%(torrentleecher_destdir,e))
+            report_error("Cannot change to download directory %r: %s"%(client.local_download_dir,e))
             sys.exit(4)
             
 	if opts.daemonize:
@@ -233,8 +231,8 @@ def main():
         signal.signal(signal.SIGTERM,sighandler)
         signal.signal(signal.SIGINT,sighandler)
         
-        # everything else depends on the torrentleecher_destdir being the cwd
-        os.chdir(torrentleecher_destdir)
+        # everything else depends on the local_download_dir being the cwd
+        os.chdir(client.local_download_dir)
         
 	if opts.lock:
             result = lock(torrentleecher_lockfile)
