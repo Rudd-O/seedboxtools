@@ -3,7 +3,7 @@
 
 # assert False
 
-from subprocess import Popen,PIPE,STDOUT,call
+from seedboxtools.util import shell_quote, getstdout, getstdoutstderr, passthru, getssh, sshpassthru
 import fcntl
 import re
 import os
@@ -28,27 +28,6 @@ torrentleecher_logfile = ".torrentleecher.log"
 torrentleecher_lockfile = ".torrentleecher.lock"
 fluxcli = "fluxcli"
 torrentinfo = "torrentinfo-console"
-
-from seedboxtools.util import shell_quote
-def getstdout(cmdline):
-	p = Popen(cmdline,stdout=PIPE)
-	output = p.communicate()[0]
-	if p.returncode != 0: raise Exception, "Command %s return code %s"%(cmdline,p.returncode)
-	return output
-def getstdoutstderr(cmdline,inp=None): # return stoud and stderr in a single string object
-	p = Popen(cmdline,stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-	output = p.communicate(inp)[0]
-	if p.returncode != 0: raise Exception, "Command %s return code %s"%(cmdline,p.returncode)
-	return output
-def passthru(cmdline): return call(cmdline) # return status code, pass the outputs thru
-def getssh(cmd): return getstdout(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return stdout of ssh.  doesn't return stderr
-def sshpassthru(cmd): return call(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return status code from a command executed using ssh
-
-
-#if call("/sbin/ifconfig tap0".split(" "),stdout=file("/dev/null"),stderr=STDOUT) == 0:
-	#torrentflux_server = "192.168.3.1"
-#else:
-	#torrentflux_server = "torrentserver.com"
 
 
 def get_finished_torrents():
