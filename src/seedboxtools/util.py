@@ -18,5 +18,3 @@ def getstdoutstderr(cmdline,inp=None): # return stoud and stderr in a single str
         return output
 
 def passthru(cmdline): return call(cmdline) # return status code, pass the outputs thru
-def getssh(cmd): return getstdout(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return stdout of ssh.  doesn't return stderr
-def sshpassthru(cmd): return call(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return status code from a command executed using ssh

@@ -3,7 +3,7 @@
 
 # assert False
 
-from seedboxtools.util import shell_quote, getstdout, getstdoutstderr, passthru, getssh, sshpassthru
+from seedboxtools.util import shell_quote, getstdout, getstdoutstderr, passthru, getssh, sshpassthru, call
 import fcntl
 import re
 import os
@@ -28,6 +28,9 @@ torrentleecher_logfile = ".torrentleecher.log"
 torrentleecher_lockfile = ".torrentleecher.lock"
 fluxcli = "fluxcli"
 torrentinfo = "torrentinfo-console"
+
+def getssh(cmd): return getstdout(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return stdout of ssh.  doesn't return stderr
+def sshpassthru(cmd): return call(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return status code from a command executed using ssh
 
 
 def get_finished_torrents():
