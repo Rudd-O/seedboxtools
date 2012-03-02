@@ -168,7 +168,7 @@ class TransmissionClient(SeedboxClient):
             self.filename_to_torrent_map = dict(
                 (self.get_file_name(torrentname),torrentname) for torrentname,status in self.get_finished_torrents()
             )
-        torrent = self.filename_to_torrent_map[torrent]
+        torrent = self.filename_to_torrent_map[filename]
         torrent_id = self.torrent_to_id_map[torrent]
         returncode = util.passthru([
             "env","LANG=C",
