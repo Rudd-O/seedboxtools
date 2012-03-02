@@ -39,58 +39,11 @@ client = TorrentFluxClient(
     fluxcli_path = "fluxcli",
     torrentinfo_path = "torrentinfo-console",
 )
-
 get_finished_torrents = client.get_finished_torrents
-
-def get_file_name(torrentname):
-	path = shell_quote("%s/.transfers/%s"%(
-		torrentflux_base_dir,torrentname))
-	cmd = "LANG=C %s %s"%(torrentinfo,path)
-	stdout = getssh(cmd).splitlines()
-	filenames = [ l[22:] for l in stdout if l.startswith("file name...........: ") ]
-	if not len(filenames):
-		filelistheader = stdout.index("files...............:")
-		# we disregard the actual filenames, we now want the dir name
-		#filenames = [ l[3:] for l in stdout[filelistheader+1:] if l.startswith("   ") ]
-		filenames = [ l[22:] for l in stdout if l.startswith("directory name......: ") ]
-	assert len(filenames) is 1
-	return filenames[0]
-
-def dorsync(filename,delete=False):
-	# need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
-	path = "%s/%s"%(torrentflux_download_dir,filename)
-	path = shell_quote(path)
-	path = "%s:%s"%(torrentflux_server,path)
-	opts = ["-arvzP"]
-	if delete: opts.append("--remove-source-files")
-	cmdline = [ "rsync" ] + opts + [ path , "." ]
-	returncode = passthru(cmdline)
-        return returncode
-
-def exists_on_server(filename):
-	path = shell_quote("%s/%s"%(torrentflux_download_dir,filename))
-	cmd = "test -f %s -o -d %s"%(path,path)
-	returncode = sshpassthru(cmd)
-	if returncode == 1: return False
-	elif returncode == 0: return True
-	elif returncode == -2: raise IOError(4,"exists_on_server interrupted")
-	else: raise AssertionError, "exists on server returned %s"%returncode
-
-def remove_dirs_only(filename):
-	path = shell_quote("%s/%s"%(torrentflux_download_dir,filename))
-	cmd = "find %s -type d -depth -print0 | xargs -0 rmdir"%(path,)
-	returncode = sshpassthru(cmd)
-	if returncode == 0: return
-        elif returncode == -2: raise IOError(4,"remove_dirs_only interrupted")
-	else: raise AssertionError, "remove dirs only returned %s"%returncode
-
-def remove_remote_download(filename):
-	path = shell_quote("%s/%s"%(torrentflux_download_dir,filename))
-	cmd = "rm -fr %s"%path
-	returncode = sshpassthru(cmd)
-	if returncode == 0: return
-        elif returncode == -2: raise IOError(4,"remove_remote_download interrupted")
-	else: raise AssertionError, "remove dirs only returned %s"%returncode
+get_file_name = client.get_file_name
+dorsync = client.transfer
+exists_on_server = client.exists_on_server
+remove_remote_download = client.remove_remote_download
 
 def get_files_to_download(finished_torrents_f):
         torrents = finished_torrents_f()
