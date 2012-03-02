@@ -19,6 +19,8 @@ This package contains several tools:
     
     - Python 2.7 on your local machine
     - an SSH server on your seedbox, and a user account there
+    - the command torrentinfo-console from the BitTorrent software, installed
+      on the seedbox
     - an SSH client on your local machine
     - rsync on both machines
 
@@ -47,3 +49,5 @@ configuration wizard that will set the configuration file up.  Run it and
 answer a few questions:
     
     seedboxsetup
+
+== How to run the script periodically ==
