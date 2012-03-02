@@ -26,20 +26,21 @@ torrentflux_server = "torrentserver.com"
 torrentleecher_destdir = "/export/shared/Incoming/Seedbox"
 torrentleecher_logfile = ".torrentleecher.log"
 torrentleecher_lockfile = ".torrentleecher.lock"
-fluxcli = "fluxcli"
 torrentinfo = "torrentinfo-console"
 
 def getssh(cmd): return getstdout(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return stdout of ssh.  doesn't return stderr
 def sshpassthru(cmd): return call(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return status code from a command executed using ssh
 
+client = TorrentFluxClient(
+    local_download_dir = "/export/shared/Incoming/Seedbox",
+    hostname = "torrentserver.com",
+    base_dir = "/var/torrents",
+    download_dir = "/var/torrents/incoming",
+    fluxcli_path = "fluxcli",
+    torrentinfo_path = "torrentinfo-console",
+)
 
-def get_finished_torrents():
-	stdout = getssh("%s transfers"%fluxcli)
-	stdout = stdout.splitlines()[2:-5]
-	stdout.reverse()
-	stdout = [ re.match("^- (.+) - [0123456789\.]+ [KMG]B - (Seeding|Done)",line) for line in stdout ]
-	pairs = [ ( match.group(1), match.group(2) ) for match in stdout if match ]
-	return pairs
+get_finished_torrents = client.get_finished_torrents
 
 def get_file_name(torrentname):
 	path = shell_quote("%s/.transfers/%s"%(
