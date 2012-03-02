@@ -1,0 +1,387 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# assert False
+
+from subprocess import Popen,PIPE,STDOUT,call
+import fcntl
+import re
+import os
+import sys
+import signal
+import time
+from threading import Thread
+import optparse
+import traceback
+
+
+#FIXME: this script doesn't deal with multifile torrents
+# vars!
+# wherever they are used, it's MOST LIKELY they need quoting
+# FIXME whatever calls SSH remoting needs to protect/quote the commands for spaces or else this might turn out to be a bitch
+torrentflux_base_dir = "/var/torrents"
+torrentflux_download_dir = "/var/torrents/incoming"
+# torrentflux_server = "192.168.3.1" # below now
+torrentflux_server = "torrentserver.com"
+torrentleecher_destdir = "/export/shared/Incoming/Seedbox"
+torrentleecher_logfile = ".torrentleecher.log"
+torrentleecher_lockfile = ".torrentleecher.lock"
+fluxcli = "fluxcli"
+torrentinfo = "torrentinfo-console"
+
+def shell_quote(shellarg):
+	return"'%s'"%shellarg.replace("'",r"'\''")
+def getstdout(cmdline):
+	p = Popen(cmdline,stdout=PIPE)
+	output = p.communicate()[0]
+	if p.returncode != 0: raise Exception, "Command %s return code %s"%(cmdline,p.returncode)
+	return output
+def getstdoutstderr(cmdline,inp=None): # return stoud and stderr in a single string object
+	p = Popen(cmdline,stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+	output = p.communicate(inp)[0]
+	if p.returncode != 0: raise Exception, "Command %s return code %s"%(cmdline,p.returncode)
+	return output
+def passthru(cmdline): return call(cmdline) # return status code, pass the outputs thru
+def getssh(cmd): return getstdout(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return stdout of ssh.  doesn't return stderr
+def sshpassthru(cmd): return call(["ssh","-o","BatchMode yes","-o","ForwardX11 no",torrentflux_server] + [cmd]) # return status code from a command executed using ssh
+
+
+#if call("/sbin/ifconfig tap0".split(" "),stdout=file("/dev/null"),stderr=STDOUT) == 0:
+	#torrentflux_server = "192.168.3.1"
+#else:
+	#torrentflux_server = "torrentserver.com"
+
+
+def get_finished_torrents():
+	stdout = getssh("%s transfers"%fluxcli)
+	stdout = stdout.splitlines()[2:-5]
+	stdout.reverse()
+	stdout = [ re.match("^- (.+) - [0123456789\.]+ [KMG]B - (Seeding|Done)",line) for line in stdout ]
+	pairs = [ ( match.group(1), match.group(2) ) for match in stdout if match ]
+	return pairs
+
+def get_file_name(torrentname):
+	path = shell_quote("%s/.transfers/%s"%(
+		torrentflux_base_dir,torrentname))
+	cmd = "LANG=C %s %s"%(torrentinfo,path)
+	stdout = getssh(cmd).splitlines()
+	filenames = [ l[22:] for l in stdout if l.startswith("file name...........: ") ]
+	if not len(filenames):
+		filelistheader = stdout.index("files...............:")
+		# we disregard the actual filenames, we now want the dir name
+		#filenames = [ l[3:] for l in stdout[filelistheader+1:] if l.startswith("   ") ]
+		filenames = [ l[22:] for l in stdout if l.startswith("directory name......: ") ]
+	assert len(filenames) is 1
+	return filenames[0]
+
+def dorsync(filename,delete=False):
+	# need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
+	path = "%s/%s"%(torrentflux_download_dir,filename)
+	path = shell_quote(path)
+	path = "%s:%s"%(torrentflux_server,path)
+	opts = ["-arvzP"]
+	if delete: opts.append("--remove-source-files")
+	cmdline = [ "rsync" ] + opts + [ path , "." ]
+	returncode = passthru(cmdline)
+        return returncode
+
+def exists_on_server(filename):
+	path = shell_quote("%s/%s"%(torrentflux_download_dir,filename))
+	cmd = "test -f %s -o -d %s"%(path,path)
+	returncode = sshpassthru(cmd)
+	if returncode == 1: return False
+	elif returncode == 0: return True
+	elif returncode == -2: raise IOError(4,"exists_on_server interrupted")
+	else: raise AssertionError, "exists on server returned %s"%returncode
+
+def remove_dirs_only(filename):
+	path = shell_quote("%s/%s"%(torrentflux_download_dir,filename))
+	cmd = "find %s -type d -depth -print0 | xargs -0 rmdir"%(path,)
+	returncode = sshpassthru(cmd)
+	if returncode == 0: return
+        elif returncode == -2: raise IOError(4,"remove_dirs_only interrupted")
+	else: raise AssertionError, "remove dirs only returned %s"%returncode
+
+def remove_remote_download(filename):
+	path = shell_quote("%s/%s"%(torrentflux_download_dir,filename))
+	cmd = "rm -fr %s"%path
+	returncode = sshpassthru(cmd)
+	if returncode == 0: return
+        elif returncode == -2: raise IOError(4,"remove_remote_download interrupted")
+	else: raise AssertionError, "remove dirs only returned %s"%returncode
+
+def get_files_to_download(finished_torrents_f):
+        torrents = finished_torrents_f()
+        for name,status in torrents:
+		yield (name,status,get_file_name(name))
+
+def speak(text):
+	return passthru(["/usr/local/bin/speak-notification","-n","William",text])
+
+def lock(lockfile):
+	global f
+	try:
+		fcntl.lockf(f.fileno(),fcntl.LOCK_UN)
+		f.close()
+	except: pass
+	try:
+		f=open(lockfile, 'w')
+		fcntl.lockf(f.fileno(),fcntl.LOCK_EX | fcntl.LOCK_NB)
+	except IOError,e:
+		if e.errno == 11: return False
+		else: raise
+	return True
+
+def daemonize(logfile="/dev/null"):
+	"""Detach a process from the controlling terminal and run it in the
+	background as a daemon.
+	"""
+	
+	pwd = os.getcwd()
+	logfile = os.path.join(pwd,logfile)
+	
+	try: pid = os.fork()
+	except OSError, e: raise Exception, "%s [%d]" % (e.strerror, e.errno)
+
+	if (pid == 0):		 # The first child.
+		os.setsid()
+		try: pid = os.fork()		  # Fork a second child.
+		except OSError, e: raise Exception, "%s [%d]" % (e.strerror, e.errno)
+
+		if (pid == 0):	 # The second child.
+			os.chdir("/")
+		else:
+			# exit() or _exit()?  See below.
+			os._exit(0)	 # Exit parent (the first child) of the second child.
+	else: os._exit(0)		 # Exit parent of the first child.
+
+	import resource				  # Resource usage information.
+	maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+	if (maxfd == resource.RLIM_INFINITY):
+		maxfd = 1024
+  
+	# Iterate through and close all file descriptors.
+	for f in [ sys.stderr, sys.stdout, sys.stdin ]:
+		try: f.flush()
+		except: pass
+
+	for fd in range(0, 2):
+		try: os.close(fd)
+		except OSError: pass
+
+	for f in [ sys.stderr, sys.stdout, sys.stdin ]:
+		try: f.close()
+		except: pass
+
+	sys.stdin = file("/dev/null", "r")
+	sys.stdout = file(logfile, "a",0)
+	sys.stderr = file(logfile, "a",0)
+	os.dup2(1, 2)
+
+	return(0)
+
+sighandled = False
+def sighandler(signum,frame):
+	global sighandled
+	if not sighandled:
+		report_message("Received signal %s"%signum)
+		# temporarily immunize from signals
+		oldhandler = signal.signal(signum,signal.SIG_IGN)
+		os.killpg(0,signum)
+		signal.signal(signum,oldhandler)
+		sighandled = True
+
+quiet = False
+def report_message(text):
+    global quiet
+    if not quiet: print text
+
+def report_error(text):
+    print text
+    
+def set_dir_icon(filename,iconname):
+	text ="""[Desktop Entry]
+	Icon=%s
+	"""%iconname
+	try: file(os.path.join(filename,".directory"),"w").write(text)
+	except: pass
+
+def mark_dir_complete(filename): set_dir_icon(filename,"dialog-ok-apply.png")
+def mark_dir_downloading(filename): set_dir_icon(filename,"document-open-remote.png")
+def mark_dir_error(filename): set_dir_icon(filename,"dialog-cancel.png")
+
+def mark_dir_downloading_when_it_appears(filename):
+        isdir = os.path.isdir
+        tiem = time.time
+        sleep = time.sleep
+        starttime = tiem()
+	def dowatch():
+            while not isdir(filename) and tiem() - starttime < 600: sleep(0.1)
+            if isdir(filename): mark_dir_downloading(filename)
+	tehrd = Thread(target=dowatch)
+	tehrd.setDaemon(True)
+	tehrd.start()
+
+def speakize(filename):
+	try:
+		filename,extension = os.path.splitext(filename)
+		if len(extension) != 3: filename = filename + "." + extension
+	except ValueError: pass
+	for char in "[]{}.,-_": filename = filename.replace(char," ")
+	return filename
+
+
+parser = optparse.OptionParser()
+parser.add_option(
+    "-g", '--logfile',
+    help="redirect standard output and standard error to logfile %s in directory %s"%(torrentleecher_logfile,torrentleecher_destdir),
+    action='store_true',dest='logfile',default=False,
+)
+parser.add_option(
+    "-D", '--daemon',
+    help="daemonize after start; useful for cron executions (combined with --lock); implies option -g",
+    action='store_true',dest='daemonize',default=False,
+)
+parser.add_option(
+    "-t", '--run-every',
+    help="start up and run forever, looping every X seconds; useful for systemd executions",
+    action='store',dest='run_every',default=False
+)
+parser.add_option(
+    "-r", '--remove-finished',
+    help="remove downloaded torrents that are not seeding anymore",
+    action='store_true',dest='remove_finished',default=False
+)
+parser.add_option(
+    "-l", '--lock',
+    help="lock working directory; useful for cron executions (combine with --daemon to prevent cron from jamming until downloads are finished)",
+    action='store_true',dest='lock',default=False
+)
+parser.add_option(
+    "-q", '--quiet',
+    help="do not print anything, except for errors",
+    action='store_true',dest='quiet',default=False
+)
+
+def main():
+        global quiet
+        global sighandled
+        
+        opts,args = parser.parse_args()
+        if args: parser.error("This command accepts no arguments")
+        
+        if opts.run_every is not False:
+            try:
+                opts.run_every = int(opts.run_every)
+                if opts.run_every < 1:
+                    raise ValueError
+            except ValueError,e:
+                parser.error("option --run-every must be a positive integer")
+        
+        quiet = opts.quiet
+        
+        try:
+            os.chdir(torrentleecher_destdir)
+        except (IOError,OSError), e:
+            report_error("Cannot change to directory %r: %s"%(torrentleecher_destdir,e))
+            sys.exit(4)
+            
+	if opts.daemonize:
+            daemonize(torrentleecher_logfile)
+        elif opts.logfile:
+            os.close(1)
+            os.close(2)
+            sys.stdout = file(torrentleecher_logfile, "a",0)
+            sys.stderr = sys.stderr
+            os.dup2(1, 2)
+	
+        signal.signal(signal.SIGTERM,sighandler)
+        signal.signal(signal.SIGINT,sighandler)
+        
+        # everything else depends on the torrentleecher_destdir being the cwd
+        os.chdir(torrentleecher_destdir)
+        
+	if opts.lock:
+            result = lock(torrentleecher_lockfile)
+            if not result:
+                report_error("Another process has a lock on the download directory")
+                sys.exit(0)
+        
+	def do():
+		for torrent,status,filename in get_files_to_download(get_finished_torrents):
+			# Set loop vars up
+			download_lockfile = ".%s.done"%filename
+			fully_downloaded = os.path.exists(download_lockfile)
+			seeding = status == "Seeding"
+			# If the remote files don't exist, skip
+			report_message("Checking if %s from torrent %s exists on server"%(filename,torrent))
+			if not exists_on_server(filename):
+				report_message("%s from %s is no longer available on server, continuing to next torrent"%(filename,torrent))
+				continue
+			
+                        if not fully_downloaded:
+                            
+                                # Start download.
+                                report_message("Downloading %s from torrent %s"%(filename,torrent))
+                                mark_dir_downloading_when_it_appears(filename)
+                                retvalue = dorsync(filename)
+                                if retvalue != 0: # rsync failed
+                                        mark_dir_error(filename)
+                                        if retvalue == 20:
+                                                report_error("Download of %s stopped -- rsync process interrupted"%(filename,))
+                                                report_message("Finishing by user request")
+                                                return 2
+                                        elif retvalue < 0:
+                                                report_error("Download of %s failed -- rsync process killed with signal %s"%(filename,-retvalue))
+                                                report_message("Aborting")
+                                                return 1
+                                        else:
+                                                report_error("Download of %s failed -- rsync process exited with return status %s"%(filename,retvalue))
+                                                report_message("Aborting")
+                                                return 1
+                                # Rsync successful
+                                # mark file as downloaded
+                                try: file(download_lockfile,"w").write("Done")
+                                except OSError,e:
+                                        if e.errno != 17: raise
+                                # report successful download
+                                report_message("Download of %s complete"%filename)
+                                mark_dir_complete(filename) ; fully_downloaded = True
+			
+			else:
+                            
+                            if opts.remove_finished:
+				if seeding:
+					report_message("%s from %s is complete but still seeding, not removing"%(filename,torrent))
+                                else:
+					remove_remote_download(filename)
+					report_message("Removal of %s complete"%filename)
+
+        def do_guarded():
+            try:
+                return do()
+            except IOError,e:
+                if e.errno == 4: pass
+                else: traceback.print_last()
+                return 8
+            except Exception,e:
+                raise
+        
+        retvalue = 0
+        if opts.run_every is False:
+            report_message("Starting download of finished torrents")
+            retvalue = do_guarded()
+            report_message("Download of finished torrents complete")
+        else:
+            report_message("Starting daemon for download of finished torrents")
+            while not sighandled:
+                retvalue = do_guarded()
+                if not sighandled: report_message("Sleeping %s seconds"%opts.run_every)
+                for x in xrange(opts.run_every):
+                    if not sighandled: time.sleep(1)
+            report_message("Download of finished torrents complete")
+        if sighandled: return 0
+        return retvalue
+
+if __name__ == "__main__":
+    sys.exit(main())
