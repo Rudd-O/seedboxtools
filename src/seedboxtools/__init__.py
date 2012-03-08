@@ -123,7 +123,8 @@ class TransmissionClient(SeedboxClient):
         stdout = stdout.splitlines()[1:-1]
         stdout.reverse()
         stdout = [ x.split() + [x[70:]] for x in stdout ]
-        stdout = [ (x[0],x[8],x[-1]) for x in stdout if x[8] in "Finished Seeding" ]
+        donetoseeding = lambda t: "Seeding" if t != "Stopped" else t
+        stdout = [ (x[0],donetoseeding(x[8]),x[-1]) for x in stdout if x[4] in "Done" ]
         self.torrent_to_id_map = dict((x[2],x[0]) for x in stdout)
         pairs = [ (x[2],x[1]) for x in stdout]
         return pairs
