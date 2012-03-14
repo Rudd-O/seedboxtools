@@ -5,18 +5,34 @@ import os
 
 dir = os.path.dirname(__file__)
 path_to_main_file = os.path.join(dir, "src/seedboxtools/__init__.py")
+path_to_readme = os.path.join(dir, "README")
 for line in open(path_to_main_file):
 	if line.startswith('__version__'):
 		version = line.split()[-1].strip("'").strip('"')
 		break
 else:
 	raise ValueError, '"__version__" not found in "src/seedboxtools/__init__.py"'
+readme = open(path_to_readme).read(-1)
+
+classifiers = [
+'Development Status :: 5 - Production/Stable',
+'Environment :: Console',
+'Environment :: No Input/Output (Daemon)',
+'Intended Audience :: End Users/Desktop',
+'Intended Audience :: System Administrators',
+'License :: OSI Approved :: GNU General Public License (GPL)',
+'Operating System :: POSIX :: Linux',
+'Programming Language :: Python :: 2 :: Only',
+'Programming Language :: Python :: 2.7',
+'Topic :: Communications :: File Sharing',
+'Topic :: Utilities',
+]
 
 setup(
 	name = 'seedboxtools',
 	version=version,
 	description = 'A tool to automate downloading finished torrents from a seedbox',
-	long_description = """seedboxtools is a tool to automate the download of finished torrents from a seedbox, whether it be TorrentFlux-b4rt or Transmission with its Web and API interface.""",
+	long_description = readme,
 	author='Manuel Amador (Rudd-O)',
 	author_email='rudd-o@rudd-o.com',
 	license="GPL",
@@ -24,8 +40,10 @@ setup(
 	package_dir=dict([
 					("seedboxtools", "src/seedboxtools"),
 					]),
+	classifiers = classifiers,
 	packages = ["seedboxtools"],
 	scripts = ["bin/configleecher", 'bin/leechtorrents'],
 	keywords = "seedbox TorrentFlux Transmission torrents",
+	requires = ["iniparse"],
 	zip_safe=False,
 )
