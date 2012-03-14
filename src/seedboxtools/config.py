@@ -52,6 +52,8 @@ def raw_input_default(prompt, default, choices=None):
     return choice
 
 def wizard():
+    try: import readline
+    except ImportError: pass
     cfg = get_default_config()
     try:
         f = open(default_filename)
