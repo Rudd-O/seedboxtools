@@ -67,34 +67,58 @@ def wizard():
           cfg.general.client,
           ["TorrentFluxClient", "TransmissionClient"],
     )
-    cfg[cfg.general.client].hostname = raw_input_default(
-          "Torrent server host name",
-          cfg[cfg.general.client].hostname,
-    )
-    cfg[cfg.general.client].torrents_dir = raw_input_default(
-          "Directory where the torrent server stores torrent files",
-          cfg[cfg.general.client].torrents_dir,
-    )
-    cfg[cfg.general.client].incoming_dir = raw_input_default(
-          "Directory where the torrent server stores downloaded files",
-          cfg[cfg.general.client].incoming_dir,
-    )
-    cfg[cfg.general.client].transmission_remote_path = raw_input_default(
-          "Command to run transmission-remote locally",
-          cfg[cfg.general.client].transmission_remote_path,
-    )
-    cfg[cfg.general.client].transmission_remote_user = raw_input_default(
-          "User name for transmission-remote",
-          cfg[cfg.general.client].transmission_remote_user,
-    )
-    cfg[cfg.general.client].transmission_remote_password = raw_input_default(
-          "Password for transmission-remote",
-          cfg[cfg.general.client].transmission_remote_password,
-    )
-    cfg[cfg.general.client].torrentinfo_path = raw_input_default(
-          "Command to run torrentinfo-console in the server",
-          cfg[cfg.general.client].torrentinfo_path,
-    )
+    if cfg.general.client == 'TransmissionClient':
+        cfg[cfg.general.client].hostname = raw_input_default(
+              "Torrent server host name",
+              cfg[cfg.general.client].hostname,
+        )
+        cfg[cfg.general.client].torrents_dir = raw_input_default(
+              "Directory where the torrent server stores torrent files",
+              cfg[cfg.general.client].torrents_dir,
+        )
+        cfg[cfg.general.client].incoming_dir = raw_input_default(
+              "Directory where the torrent server stores downloaded files",
+              cfg[cfg.general.client].incoming_dir,
+        )
+        cfg[cfg.general.client].transmission_remote_path = raw_input_default(
+              "Command to run transmission-remote locally",
+              cfg[cfg.general.client].transmission_remote_path,
+        )
+        cfg[cfg.general.client].transmission_remote_user = raw_input_default(
+              "User name for transmission-remote",
+              cfg[cfg.general.client].transmission_remote_user,
+        )
+        cfg[cfg.general.client].transmission_remote_password = raw_input_default(
+              "Password for transmission-remote",
+              cfg[cfg.general.client].transmission_remote_password,
+        )
+        cfg[cfg.general.client].torrentinfo_path = raw_input_default(
+              "Command to run torrentinfo-console in the server",
+              cfg[cfg.general.client].torrentinfo_path,
+        )
+    elif cfg.general.client == 'TorrentFluxClient':
+        cfg[cfg.general.client].hostname = raw_input_default(
+              "Torrent server host name",
+              cfg[cfg.general.client].hostname,
+        )
+        cfg[cfg.general.client].base_dir = raw_input_default(
+              "Base directory where TorrentFlux stores its .transfers directory",
+              cfg[cfg.general.client].base_dir,
+        )
+        cfg[cfg.general.client].incoming_dir = raw_input_default(
+              "Directory where where TorrentFlux stores downloaded files",
+              cfg[cfg.general.client].incoming_dir,
+        )
+        cfg[cfg.general.client].fluxcli_path = raw_input_default(
+              "Command to run fluxcli in the server",
+              cfg[cfg.general.client].fluxcli_path,
+        )
+        cfg[cfg.general.client].torrentinfo_path = raw_input_default(
+              "Command to run torrentinfo-console in the server",
+              cfg[cfg.general.client].torrentinfo_path,
+        )
+    else:
+        assert 0, "Not reached"
     print "Writing this configuration to %s" % default_filename
     print "===============8<================"
     print cfg
