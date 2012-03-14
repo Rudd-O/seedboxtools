@@ -108,7 +108,7 @@ Create a unit file::
     
     [Service]
     Type=simple
-    ExecStart=leechtorrents -g .torrentleecher.log -ql -t 30
+    ExecStart=/usr/bin/leechtorrents -g .torrentleecher.log -ql -t 30
     User=<YOUR_USERNAME_GOES_HERE>
     Restart=always
     
@@ -117,6 +117,6 @@ Create a unit file::
 
 Then run as root::
 
-    systemctl reload
+    systemctl daemon-reload
     systemctl enable leechtorrents.service
     systemctl start leechtorrents.service
