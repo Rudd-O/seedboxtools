@@ -1,12 +1,18 @@
 Seedbox tools (seedboxtools)
 ============================
 
-Seedbox tools is a software package that automates the process of fetching
-finished torrents from your seedbox, and dispatching new torrents on your
-seedbox as well.
+The seedbox tools will help you download all those Linux ISOs that you
+downloaded on your remote seedbox (running Transmission Web, or
+TorrentFlux-b4rt) 100% automatically, without any manual intervention on your
+part.
 
-Package contents
-----------------
+With this program installed on your home computer, all you need to do is
+simply start a torrent in your seedbox, from anywhere you are; then, when
+you get back home, all your downloads will be fully downloaded at home,
+ready to use and enjoy.
+
+Tools included in this set
+--------------------------
 
 This package contains several tools:
     
@@ -15,15 +21,18 @@ This package contains several tools:
     2. configleecher: a configuration wizard to set up the clients to work
        properly against your seedbox.
 
-Requirements
-------------
+What you need to have before using this package
+-----------------------------------------------
     
     - Python 2.7 on your local machine
-    - Python iniparse
-    - an SSH server on your seedbox, and a public key-authenticated user
-      account in it, with read access to the torrents and downloads directories
+    - Python iniparse there
+    - a seedbox running TorrentFlux-b4rt or Transmission Web + API
+    - an SSH server on your seedbox
     - an SSH client on your local machine
-    - rsync on both machines
+    - a public key-authenticated user account in the seedbox, so that your user
+      can log in without passwords and can read the torrents and downloads
+      directories in the seedbox
+    - rsync installed on both machines
     - if you are using TorrentFlux-b4rt on your seedbox:
         * the command torrentinfo-console from the BitTorrent package, installed
           on the seedbox
