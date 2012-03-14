@@ -10,9 +10,7 @@ This package contains several tools:
     
     1. leechtorrents: a tool that leeches finished downloads from a torrent
        seedbox to your local computer.
-    2. dispatchtorrent: a tool that uploads a torrent file or magnet URL
-       to a seedbox, telling the seedbox to start downloading.
-    3. seedboxsetup: a configuration wizard to set up the clients to work
+    2. leechtorrents: a configuration wizard to set up the clients to work
        properly against your seedbox.
 
 == Requirements ==
@@ -54,7 +52,7 @@ Both tools require some configuration after installation.  There is a nifty
 configuration wizard that will set the configuration file up.  Run it and
 answer a few questions:
     
-    seedboxsetup
+    leechtorrents
 
 The script will explain the most common error conditions, such as unavailable
 programs or directories in the remote host not accessible.
