@@ -1,2 +1,2 @@
 FIXME: this script doesn't deal with multifile torrents
-
+FIXME: check that the required commands are available and work properly, both at startup of the leecher and during config time
