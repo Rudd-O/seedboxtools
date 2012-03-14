@@ -63,7 +63,7 @@ class TorrentFluxClient(SeedboxClient):
 
     def get_file_name(self, torrentname):
         fullpath = os.path.join(self.base_dir, ".transfers", torrentname)
-        stdout = getssh(["env", "LANG=C", self.torrentinfo_path, fullpath]).splitlines()
+        stdout = self.getssh(["env", "LANG=C", self.torrentinfo_path, fullpath]).splitlines()
         filenames = [ l[22:] for l in stdout if l.startswith("file name...........: ") ]
         if not len(filenames):
                 filelistheader = stdout.index("files...............:")
