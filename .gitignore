@@ -1,7 +1,7 @@
 *.pyc
 *~
 dist
-statwatcher-*
-statwatcher.egg-info
+seedboxtools-*
+seedboxtools.egg-info
 build
 .settings

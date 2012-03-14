@@ -17,7 +17,8 @@ This package contains several tools:
     
     - Python 2.7 on your local machine
     - Python iniparse
-    - an SSH server on your seedbox, and a user account there
+    - an SSH server on your seedbox, and a public key-authenticated user
+      account in it, with read access to the torrents and downloads directories
     - an SSH client on your local machine
     - rsync on both machines
     - if you are using TorrentFlux-b4rt on your seedbox:
@@ -27,6 +28,7 @@ This package contains several tools:
     - if you are using Transmission on your seedbox:
         * the command transmission-remote from the Transmission package,
           installed on your local machine
+        * the API server port open so that transmission-remote can query it
 
 == Installation ==
 
