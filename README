@@ -50,14 +50,14 @@ You can also run it directly from the unpacked source directory:
 
 == Configuration ==
 
-Both tools require some configuration after installation.  There is a nifty
+The tools require some configuration after installation.  There is a nifty
 configuration wizard that will set the configuration file up.  Run it and
 answer a few questions:
     
     leechtorrents
 
-The script will explain the most common error conditions, such as unavailable
-programs or directories in the remote host not accessible.
+The script will ask you for the necessary configuration values before you can
+run the tools here.
 
 Notes:
     
@@ -66,4 +66,35 @@ Notes:
     they use to protect those directories, and change the permissions
     accordingly so you have at least read and list permissions (rx).
     
-== How to run the script periodically ==
+== How to run the downloader script periodically ==
+
+You can do it with cron, or in a systemd unit file.
+
+= With cron =
+
+Put this in your crontab to run it every minute:
+
+    * * * * * leechtorrents -Dql
+
+= With systemd =
+
+Add this unit file to /etc/systemd/system/leechtorrents.service
+
+    [Unit]
+    Description=Torrentleecher
+    After=network.target
+    
+    [Service]
+    Type=simple
+    ExecStart=leechtorrents -g .torrentleecher.log -ql -t 30
+    User=<YOUR_USERNAME_GOES_HERE>
+    Restart=always
+    
+    [Install]
+    WantedBy=network.target
+
+Then run as root:
+
+    systemctl reload
+    systemctl enable leechtorrents.service
+    systemctl start leechtorrents.service
