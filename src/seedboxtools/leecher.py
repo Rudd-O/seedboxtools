@@ -3,8 +3,7 @@ This is the code in charge of downloading proper
 '''
 
 import os, signal, sys, time, traceback
-from seedboxtools.clients import client
-from seedboxtools import util, cli
+from seedboxtools import util, cli, config
 
 # start execution here
 def download(client, remove_finished=False):
@@ -94,10 +93,21 @@ def mainloop():
         except ValueError, e:
             parser.error("option --run-every must be a positive integer")
 
+    # check config availability and load configuration
     try:
-        os.chdir(client.local_download_dir)
+        config_fobject = open(config.default_filename)
     except (IOError, OSError), e:
-        util.report_error("Cannot change to download directory %r: %s" % (client.local_download_dir, e))
+        util.report_error("Cannot load configuration (%s) -- run configleecher first" % (e))
+        sys.exit(7)
+    cfg = config.load_config(config_fobject)
+    local_download_dir = cfg.general.local_download_dir
+    client = config.get_client(cfg)
+
+    # check download dir and log file availability
+    try:
+        os.chdir(local_download_dir)
+    except (IOError, OSError), e:
+        util.report_error("Cannot change to download directory %r: %s" % (local_download_dir, e))
         sys.exit(4)
 
     if opts.logfile:
@@ -112,7 +122,7 @@ def mainloop():
         logfile = opts.logfile if opts.logfile else ".torrentleecher.log"
         util.daemonize(logfile)
         # everything else depends on the local_download_dir being the cwd
-        os.chdir(client.local_download_dir)
+        os.chdir(local_download_dir)
     elif opts.logfile:
         # non-daemonizing version of the above block
         os.close(1)

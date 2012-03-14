@@ -191,22 +191,10 @@ class TransmissionClient(SeedboxClient):
         elif returncode == -2: raise IOError(4, "remove_remote_download interrupted")
         else: raise AssertionError, "remove dirs only returned %s" % returncode
 
+clients = {
+    'TransmissionClient':TransmissionClient,
+    'TorrentFluxClient':TorrentFluxClient,
+}
 
-client = TorrentFluxClient(
-    local_download_dir="/export/shared/Incoming/Seedbox",
-    hostname="torrentserver.com",
-    base_dir="/var/torrents",
-    incoming_dir="/var/torrents/incoming",
-    fluxcli_path="fluxcli",
-    torrentinfo_path="torrentinfo-console",
-)
-client = TransmissionClient(
-    local_download_dir=".home.user/tmp/seedbox",
-    hostname="torrentserver.com",
-    torrents_dir="/var/lib/transmission/torrents",
-    incoming_dir="/var/lib/transmission/Downloads",
-    transmission_remote_path="transmission-remote",
-    transmission_remote_user="admin",
-    transmission_remote_password="password",
-    torrentinfo_path="torrentinfo-console",
-)
+def lookup_client(name):
+    return clients[name]
