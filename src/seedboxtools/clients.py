@@ -66,7 +66,7 @@ class TorrentFluxClient(SeedboxClient):
         stdout = self.getssh(["env", "LANG=C", self.torrentinfo_path, fullpath]).splitlines()
         filenames = [ l[22:] for l in stdout if l.startswith("file name...........: ") ]
         if not len(filenames):
-                filelistheader = stdout.index("files...............:")
+                _ = stdout.index("files...............:")
                 # we disregard the actual filenames, we now want the dir name
                 #filenames = [ l[3:] for l in stdout[filelistheader+1:] if l.startswith("   ") ]
                 filenames = [ l[22:] for l in stdout if l.startswith("directory name......: ") ]
@@ -175,7 +175,7 @@ class TransmissionClient(SeedboxClient):
         if not hasattr(self, "torrent_to_id_map"): self.get_finished_torrents()
         if not hasattr(self, "filename_to_torrent_map"):
             self.filename_to_torrent_map = dict(
-                (self.get_file_name(torrentname), torrentname) for torrentname, status in self.get_finished_torrents()
+                (self.get_file_name(torrentname), torrentname) for torrentname, _ in self.get_finished_torrents()
             )
         torrent = self.filename_to_torrent_map[filename]
         torrent_id = self.torrent_to_id_map[torrent]

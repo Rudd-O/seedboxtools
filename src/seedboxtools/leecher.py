@@ -155,7 +155,7 @@ def mainloop():
         while not sighandled:
             retvalue = do_guarded()
             if not sighandled: util.report_message("Sleeping %s seconds" % opts.run_every)
-            for x in xrange(opts.run_every):
+            for _ in xrange(opts.run_every):
                 if not sighandled: time.sleep(1)
         util.report_message("Download of finished torrents complete")
     if sighandled: return 0
