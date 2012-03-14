@@ -45,7 +45,11 @@ def raw_input_default(prompt, default, choices=None):
         choices_str = ''
     string = prompt + " (%s%s): " % (choices_str, default)
     _ = raw_input(string)
-    return _ if _ else default
+    choice = _ if _ else default
+    if choices and choice not in choices:
+        print choice, "is not in the choices, please try again"
+        return raw_input_default(prompt, default, choices)
+    return choice
 
 def wizard():
     cfg = get_default_config()
