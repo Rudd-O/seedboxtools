@@ -4,3 +4,4 @@ dist
 statwatcher-*
 statwatcher.egg-info
 build
+.settings
