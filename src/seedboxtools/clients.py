@@ -13,9 +13,11 @@ class SeedboxClient:
         self.local_download_dir = local_download_dir
 
     def get_finished_torrents(self):
+        # This returns a series of tuples (torrentdescriptor, "Done") for every torrent that is done
         raise NotImplementedError
 
     def get_file_name(self, torrentname):
+        # This returns the file or path name to the torrent given a torrentdescriptor
         raise NotImplementedError
 
     def transfer(self, filename):
