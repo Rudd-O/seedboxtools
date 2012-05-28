@@ -4,6 +4,7 @@ Configuration for the seedbox downloader
 
 import os
 from iniparse import INIConfig
+from iniparse.config import Undefined
 from seedboxtools import clients
 
 default_filename = os.path.expanduser("~/.torrentleecher.cfg")
@@ -39,6 +40,11 @@ def get_client(config):
     return client_constructor(**args)
 
 def raw_input_default(prompt, default, choices=None):
+    if callable(default):
+	    try: default = default()
+	    except Exception: default = ''
+    if isinstance(default,Undefined):
+	    default = ''
     if choices:
         choices_str = " or ".join(choices) + ", default "
     else:
@@ -128,5 +134,5 @@ def wizard():
     oldumask = os.umask(0077)
     save_config(cfg, open(default_filename, "w"))
     os.umask(oldumask)
-    print "Done.  You are ready to run leechtorrents."
+    print "Done.  Provided that you have set up SSH public key authentication to your seedbox, and you have rsync installed remotely, you are ready to run leechtorrents."
 
