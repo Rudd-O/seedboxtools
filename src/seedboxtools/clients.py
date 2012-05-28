@@ -212,10 +212,9 @@ class PulsedMediaClient(SeedboxClient):
         self.passthru = partial(util.ssh_passthru, hostname)
 
     def get_finished_torrents(self):
-	auth = requests.auth.HTTPBasicAuth(self.login, self.password)
 	r = requests.post(
 		"http://%s/rutorrent/plugins/httprpc/action.php"%self.hostname,
-		auth=auth,
+		auth=(self.login, self.password),
 		data="mode=list",
 	)
 	assert r.status_code == 200
