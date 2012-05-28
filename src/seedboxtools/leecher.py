@@ -150,7 +150,7 @@ def mainloop():
             )
         except IOError, e:
             if e.errno == 4: pass
-            else: traceback.print_last()
+            else: traceback.print_exc()
             return 8
         except Exception, e:
             raise
