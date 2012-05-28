@@ -73,7 +73,7 @@ def wizard():
     cfg.general.client = raw_input_default(
           "Torrent server type",
           cfg.general.client,
-          ["TorrentFluxClient", "TransmissionClient"],
+          ["TorrentFluxClient", "TransmissionClient", "PulsedMedia"],
     )
     if cfg.general.client == 'TransmissionClient':
         cfg[cfg.general.client].hostname = raw_input_default(
@@ -124,6 +124,19 @@ def wizard():
         cfg[cfg.general.client].torrentinfo_path = raw_input_default(
               "Command to run torrentinfo-console in the server",
               cfg[cfg.general.client].torrentinfo_path,
+        )
+    elif cfg.general.client == 'PulsedMedia':
+        cfg[cfg.general.client].hostname = raw_input_default(
+              "Hostname",
+              lambda: cfg[cfg.general.client].hostname,
+        )
+        cfg[cfg.general.client].login = raw_input_default(
+              "Login",
+              lambda: cfg[cfg.general.client].login,
+        )
+        cfg[cfg.general.client].password = raw_input_default(
+              "Password",
+              lambda: cfg[cfg.general.client].password,
         )
     else:
         assert 0, "Not reached"

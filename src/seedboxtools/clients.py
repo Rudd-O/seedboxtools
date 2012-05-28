@@ -6,6 +6,8 @@ from functools import partial
 import seedboxtools.util as util
 import re
 import os
+import requests
+import json
 
 class SeedboxClient:
 
@@ -193,9 +195,79 @@ class TransmissionClient(SeedboxClient):
         elif returncode == -2: raise IOError(4, "remove_remote_download interrupted")
         else: raise AssertionError, "remove dirs only returned %s" % returncode
 
+
+class PulsedMediaClient(SeedboxClient):
+    def __init__(self,
+            local_download_dir,
+            hostname,
+            login,
+            password,
+        ):
+        SeedboxClient.__init__(self, local_download_dir)
+        self.hostname = hostname
+        self.login = login
+        self.password = password
+
+        self.getssh = partial(util.ssh_getstdout, hostname)
+        self.passthru = partial(util.ssh_passthru, hostname)
+
+    def get_finished_torrents(self):
+	auth = requests.auth.HTTPBasicAuth(self.login, self.password)
+	r = requests.post(
+		"http://%s/rutorrent/plugins/httprpc/action.php"%self.hostname,
+		auth=auth,
+		data="mode=list",
+	)
+	assert r.status_code == 200
+	data = json.loads(r.content)
+	torrents = data["t"]
+	self.torrents_cache = torrents
+	self.path_for_filename_cache = dict([
+		(os.path.basename(torrent[25]), torrent[25])
+		for torrent in torrents.values()
+	])
+	done_torrents = []
+	for key,torrent in torrents.items():
+		#filename = torrent[25]
+		completed_chunks = int(torrent[6])
+		size_chunks = int(torrent[7])
+		done = completed_chunks/size_chunks
+		if done == 1: done_torrents.append( (key, "Done") )
+        return done_torrents
+
+    def get_file_name(self, torrentname):
+	# in this implementation, get_finished_torrents MUST BE called first
+	# or else this will bomb out with an attribute error
+	torrent = self.torrents_cache[torrentname]
+	return os.path.basename(torrent[25])
+
+    def transfer(self, filename):
+        # in this implementation, get_finished_torrents MUST BE called first
+        # or else this will bomb out with an attribute error
+        # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
+        path = util.shell_quote(self.path_for_filename_cache[filename])
+        path = "%s:%s" % (self.hostname, path)
+        opts = ["-arvzP"]
+        cmdline = [ "rsync" ] + opts + [ path , self.local_download_dir ]
+        returncode = util.passthru(cmdline)
+        return returncode
+
+    def exists_on_server(self, filename):
+        # in this implementation, get_finished_torrents MUST BE called first
+        # or else this will bomb out with an attribute error
+        path = self.path_for_filename_cache[filename]
+        cmd = ["test", "-e", path] # the self.passthru takes care of quoting
+        returncode = self.passthru(cmd)
+        if returncode == 1: return False
+        elif returncode == 0: return True
+        elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
+        else: raise AssertionError, "exists on server returned %s" % returncode
+
+
 clients = {
     'TransmissionClient':TransmissionClient,
     'TorrentFluxClient':TorrentFluxClient,
+    'PulsedMedia':PulsedMediaClient,
 }
 
 def lookup_client(name):
