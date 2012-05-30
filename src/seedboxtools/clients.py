@@ -213,9 +213,10 @@ class PulsedMediaClient(SeedboxClient):
 
     def get_finished_torrents(self):
 	r = requests.post(
-		"http://%s/rutorrent/plugins/httprpc/action.php"%self.hostname,
+		"https://%s/rutorrent/plugins/httprpc/action.php"%self.hostname,
 		auth=(self.login, self.password),
 		data="mode=list",
+		verify=False,
 	)
 	assert r.status_code == 200
 	data = json.loads(r.content)
