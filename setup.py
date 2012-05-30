@@ -44,6 +44,6 @@ setup(
 	packages = ["seedboxtools"],
 	scripts = ["bin/configleecher", 'bin/leechtorrents'],
 	keywords = "seedbox TorrentFlux Transmission torrents",
-	requires = ["iniparse"],
+	requires = ["iniparse", "requests (>=0.11.1)"],
 	zip_safe=False,
 )

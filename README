@@ -25,7 +25,8 @@ What you need to have before using this package
 -----------------------------------------------
     
     - Python 2.7 on your local machine
-    - Python iniparse there
+    - Python iniparse installed there
+    - Python requests installed there, version 0.11.1 or higher (with SSL support)
     - a seedbox running TorrentFlux-b4rt or Transmission Web + API, or
       a PulsedMedia ruTorrent seedbox from PulsedMedia.com
     - an SSH server on your seedbox
