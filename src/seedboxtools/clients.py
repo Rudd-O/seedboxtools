@@ -74,7 +74,7 @@ class TorrentFluxClient(SeedboxClient):
                 # we disregard the actual filenames, we now want the dir name
                 #filenames = [ l[3:] for l in stdout[filelistheader+1:] if l.startswith("   ") ]
                 filenames = [ l[22:] for l in stdout if l.startswith("directory name......: ") ]
-        assert len(filenames) is 1
+        assert len(filenames) is 1, "Wrong length of filenames: %r"%filenames
         return filenames[0]
 
     def transfer(self, filename):
@@ -218,7 +218,7 @@ class PulsedMediaClient(SeedboxClient):
 		data="mode=list",
 		verify=False,
 	)
-	assert r.status_code == 200
+	assert r.status_code == 200, "Non-OK status code while retrieving get_finished_torrents: %r"%r.status_code
 	data = json.loads(r.content)
 	torrents = data["t"]
 	self.torrents_cache = torrents
