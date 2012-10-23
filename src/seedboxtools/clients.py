@@ -222,10 +222,13 @@ class PulsedMediaClient(SeedboxClient):
 	data = json.loads(r.content)
 	torrents = data["t"]
 	self.torrents_cache = torrents
-	self.path_for_filename_cache = dict([
-		(os.path.basename(torrent[25]), torrent[25])
-		for torrent in torrents.values()
-	])
+	try:
+		self.path_for_filename_cache = dict([
+			(os.path.basename(torrent[25]), torrent[25])
+			for torrent in torrents.values()
+		])
+	except AttributeError, e:
+		raise AttributeError, "normally this would be a 'list' object has no attribute 'values', but in reality something went wrong with the unserialization of JSON values, which were serialized from %r and were supposed to come from the 't' bag of JSON data -- this happens when PulsedMedia's server fucks up"%r.content
 	done_torrents = []
 	for key,torrent in torrents.items():
 		#filename = torrent[25]
