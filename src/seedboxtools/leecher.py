@@ -4,6 +4,7 @@ This is the code in charge of downloading proper
 
 import os, signal, sys, time, traceback
 from seedboxtools import util, cli, config
+from seedboxtools.clients import TemporaryMalfunction
 
 # start execution here
 def download(client, remove_finished=False):
@@ -152,6 +153,8 @@ def mainloop():
             if e.errno == 4: pass
             else: traceback.print_exc()
             return 8
+        except TemporaryMalfunction, e:
+            util.report_error(str(e))
         except Exception, e:
             raise
 

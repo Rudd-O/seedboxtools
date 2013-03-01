@@ -9,6 +9,10 @@ import os
 import requests
 import json
 
+class SeedboxClientException(Exception): pass
+
+class TemporaryMalfunction(SeedboxClientException): pass
+
 class SeedboxClient:
 
     def __init__(self, local_download_dir):
@@ -16,6 +20,7 @@ class SeedboxClient:
 
     def get_finished_torrents(self):
         # This returns a series of tuples (torrentdescriptor, "Done") for every torrent that is done
+        # If there is a temporary error, it raises TemporaryMalfunction
         raise NotImplementedError
 
     def get_file_name(self, torrentname):
@@ -218,6 +223,11 @@ class PulsedMediaClient(SeedboxClient):
 		data="mode=list",
 		verify=False,
 	)
+	if r.status_code == 500:
+		raise TemporaryMalfunction(
+			"Server is experiencing a temporary 500 status code: %s"%\
+			r.content
+		)
 	assert r.status_code == 200, "Non-OK status code while retrieving get_finished_torrents: %r"%r.status_code
 	data = json.loads(r.content)
 	torrents = data["t"]

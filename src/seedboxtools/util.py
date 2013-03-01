@@ -163,7 +163,7 @@ def set_verbose(v):
 
 def report_message(text):
     global verbose
-    if verbose: print text
+    if verbose: print >> sys.stderr, text
 
 def report_error(text):
-    print text
+    print >> sys.stderr, text
