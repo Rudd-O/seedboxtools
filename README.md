@@ -1,6 +1,11 @@
 Seedbox tools (seedboxtools)
 ============================
 
+| Donate to support this free software |
+|:------------------------------------:|
+| <img width="164" height="164" title="" alt="" src="doc/bitcoin.png" /> |
+| [12cXnYY3wabbPmLpS7ZgACh4mBawrXdndk](bitcoin:12cXnYY3wabbPmLpS7ZgACh4mBawrXdndk) |
+
 The seedbox tools will help you download all those Linux ISOs that you
 downloaded on your remote seedbox (whether it's a Transmission Web, or
 TorrentFlux-b4rt, or a PulsedMedia seedbox) 100% automatically, without any

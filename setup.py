@@ -5,7 +5,7 @@ import os
 
 dir = os.path.dirname(__file__)
 path_to_main_file = os.path.join(dir, "src/seedboxtools/__init__.py")
-path_to_readme = os.path.join(dir, "README")
+path_to_readme = os.path.join(dir, "README.md")
 for line in open(path_to_main_file):
 	if line.startswith('__version__'):
 		version = line.split()[-1].strip("'").strip('"')

@@ -1,1 +1,3 @@
 include BUGS
+include README.md
+include doc/bitcoin.png
