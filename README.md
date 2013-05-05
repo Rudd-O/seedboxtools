@@ -80,10 +80,11 @@ The tools require some configuration after installation.  There is a nifty
 configuration wizard that will set the configuration file up.  Run it and
 answer a few questions::
     
-    leechtorrents
+    configleecher
 
 The script will ask you for the necessary configuration values before you can
-run the tools here.
+run the tools here.  You should run this wizard on the machine where you'll
+be running `leechtorrents` (see below).
 
 Note: Both TorrentFlux and Transmission protect their download and torrent
 directories using permissions.  You should become part of the UNIX group
