@@ -25,6 +25,8 @@ This package contains several tools:
        seedbox to your local computer.
     2. configleecher: a configuration wizard to set up the clients to work
        properly against your seedbox.
+    3. uploadtorrents: a tool that lets you queue up a torrent or magnet link
+       for download on your seedbox.
 
 What you need to have before using this package
 -----------------------------------------------
@@ -128,3 +130,13 @@ Then run as root::
     systemctl daemon-reload
     systemctl enable leechtorrents.service
     systemctl start leechtorrents.service
+
+How to upload torrents to your seedbox
+--------------------------------------
+
+The `uploadtorrents` command-line tool included in this package will upload the
+provided torrent files or magnet links to your seedbox::
+
+    uploadtorrents TORRENT [TORRENT ...]
+
+This tool currently only supports PulsedMedia clients.
