@@ -13,6 +13,10 @@ class SeedboxClientException(Exception): pass
 
 class TemporaryMalfunction(SeedboxClientException): pass
 
+class InvalidTorrent(SeedboxClientException):
+    def __str__(self):
+        return "invalid torrent file or magnet link: %r" % self.message
+
 class SeedboxClient:
 
     def __init__(self, local_download_dir):
@@ -41,6 +45,12 @@ class SeedboxClient:
         torrents = self.get_finished_torrents()
         for name, status in torrents:
             yield (name, status, self.get_file_name(name))
+
+    def upload_magnet_link(self, magnet_link):
+        raise NotImplementedError
+
+    def upload_torrent(self, torrent_path):
+        raise NotImplementedError
 
 
 class TorrentFluxClient(SeedboxClient):
@@ -275,6 +285,33 @@ class PulsedMediaClient(SeedboxClient):
         elif returncode == 0: return True
         elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
         else: raise AssertionError, "exists on server returned %s" % returncode
+
+    def upload_magnet_link(self, magnet_link):
+        return self._upload(data={'url': magnet_link})
+
+    def upload_torrent(self, torrent_path):
+        files={'torrent_file': (os.path.basename(torrent_path),
+                                open(torrent_path, 'rb')) }
+        return self._upload(files=files)
+
+    def _upload(self, **params):
+        r = requests.post(
+            "https://%s/rutorrent/php/addtorrent.php"%self.hostname,
+            auth=(self.login, self.password),
+            verify=False,
+            **params
+        )
+        if r.status_code == 500:
+            raise TemporaryMalfunction(
+                "Server is experiencing a temporary 500 status code: %s"%\
+                r.content
+            )
+        if 'addTorrentSuccess' in r.content:
+            return
+        elif 'addTorrentFailed' in r.content:
+            raise InvalidTorrent(magnet_link)
+        else:
+            assert 0, (r.status_code, r.content)
 
 
 clients = {
