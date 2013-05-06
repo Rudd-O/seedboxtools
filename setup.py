@@ -42,7 +42,7 @@ setup(
 					]),
 	classifiers = classifiers,
 	packages = ["seedboxtools"],
-	scripts = ["bin/configleecher", 'bin/leechtorrents'],
+	scripts = ["bin/configleecher", 'bin/leechtorrents', 'bin/uploadtorrents'],
 	keywords = "seedbox TorrentFlux Transmission torrents",
 	requires = ["iniparse", "requests (>=0.11.1)"],
 	zip_safe=False,
