@@ -93,10 +93,27 @@ directories using permissions.  You should become part of the UNIX group
 they use to protect those directories, and change the permissions
 accordingly so you have at least read and list permissions (rx).
     
-How to run the downloader script periodically
----------------------------------------------
+Downloading finished torrents with the leecher tool
+---------------------------------------------------
 
-You can do it with cron, or in a systemd unit file.
+The leecher tool will contact your seedbox and ask for a listing of finished
+torrents, then download them locally to the directory you chose during
+configuration.  There are various ways to run the script:
+
+* manually on a terminal window
+* with cron
+* in a systemd unit file as a service
+
+Manually
+________
+
+In your terminal program of choice, just run the command::
+
+    leechtorrents
+
+There are various options you can supply to the program to change its
+behavior, such as enabling periodic checks and logging to a file. Run
+`leechtorrents -h` to see the options.
 
 With cron
 ~~~~~~~~~
@@ -104,6 +121,11 @@ With cron
 Put this in your crontab to run it every minute::
 
     * * * * * leechtorrents -Dql
+
+`leechtorrents` will daemonize itself, write to its default log file (which
+you could change with another command line option), and be quiet if no work
+needs to be done.  Locking prevents multiple `leechtorrents` processes from
+running simultaneously.
 
 With systemd
 ~~~~~~~~~~~~
