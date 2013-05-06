@@ -174,14 +174,16 @@ def which(program):
 
     return None
 
-def notify_send(message):
-    return check_call([
-                "notify-send",
-                "--hint=int:transient:1",
-                "-a", os.path.basename(sys.argv[0]),
-                "Seedbox tools",
-                message,
-                ])
+def notify_send(message, transient=True):
+    cmd = [
+        "notify-send",
+        "-a", os.path.basename(sys.argv[0]),
+        "Seedbox tools",
+        message,
+    ]
+    if transient:
+        cmd.append("--hint=int:transient:1")
+    return check_call(cmd)
 
 _use_linux_gui = None
 def use_linux_gui():
@@ -207,5 +209,5 @@ def report_message(text):
 
 def report_error(text):
     if use_linux_gui():
-        notify_send(text.capitalize())
+        notify_send(text.capitalize(), transient=False)
     print >> sys.stderr, text
