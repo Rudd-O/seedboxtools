@@ -4,7 +4,7 @@
 
 # subprocess utilities
 
-from subprocess import Popen, PIPE, STDOUT, call
+from subprocess import Popen, PIPE, STDOUT, call, check_call
 import os, sys
 import fcntl
 
@@ -156,6 +156,43 @@ def speak(text):
 
 # message reporting utilities
 
+def which(program):
+    import os
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+def notify_send(message):
+    return check_call([
+                "notify-send",
+                "--hint=int:transient:1",
+                "-a", os.path.basename(sys.argv[0]),
+                "Seedbox tools",
+                message,
+                ])
+
+_use_linux_gui = None
+def use_linux_gui():
+    global _use_linux_gui
+    if _use_linux_gui is None:
+        if "DISPLAY" in os.environ and which("notify-send"):
+            _use_linux_gui = True
+        else:
+            _use_linux_gui = False
+    return _use_linux_gui
+
 verbose = True
 def set_verbose(v):
     global verbose
@@ -163,7 +200,12 @@ def set_verbose(v):
 
 def report_message(text):
     global verbose
-    if verbose: print >> sys.stderr, text
+    if verbose:
+        if use_linux_gui():
+            notify_send(text.capitalize())
+        print >> sys.stderr, text
 
 def report_error(text):
+    if use_linux_gui():
+        notify_send(text.capitalize())
     print >> sys.stderr, text

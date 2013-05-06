@@ -1,4 +1,6 @@
 from seedboxtools import cli, config, util
+from requests.exceptions import ConnectionError
+import os
 
 def main():
     parser = cli.get_uploader_parser()
@@ -25,13 +27,18 @@ def main():
         try:
             if is_magnet(uploadable):
                 client.upload_magnet_link(uploadable)
+                util.report_message("%s submitted to seedbox" % uploadable)
             elif is_torrent(uploadable):
                 client.upload_torrent(uploadable)
+                util.report_message("%s submitted to seedbox" % os.path.basename(uploadable))
             else:
-                raise ValueError("%r is not a torrent or a magnet link" % uploadable)
+                raise ValueError("%s is not a torrent or a magnet link" % uploadable)
         except Exception as e:
-            raise e
-            util.report_error("error while uploading %r: %s" % (uploadable, e))
+            extramessage = ""
+            if isinstance(e, ConnectionError):
+                if e.args[0].errno == -2:
+                    extramessage = "\nCheck the hostname in your seedboxtools configuration."
+            util.report_error("error while uploading %s: %s%s" % (uploadable, e, extramessage))
             failed = True
 
     if failed:
