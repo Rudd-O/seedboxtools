@@ -189,7 +189,7 @@ _use_linux_gui = None
 def use_linux_gui():
     global _use_linux_gui
     if _use_linux_gui is None:
-        if "DISPLAY" in os.environ and which("notify-send"):
+        if os.environ.get("DISPLAY", None) and which("notify-send"):
             _use_linux_gui = True
         else:
             _use_linux_gui = False
