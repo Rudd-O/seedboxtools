@@ -309,7 +309,7 @@ class PulsedMediaClient(SeedboxClient):
         if 'addTorrentSuccess' in r.content:
             return
         elif 'addTorrentFailed' in r.content:
-            if data in params:
+            if "data" in params:
                 raise InvalidTorrent(params['data']['url'])
             else:
                 raise InvalidTorrent(params['files']['torrent_file'][0])
