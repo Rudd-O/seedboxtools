@@ -1,6 +1,7 @@
 from seedboxtools import cli, config, util
 from requests.exceptions import ConnectionError
 import os
+import sys
 
 def main():
     parser = cli.get_uploader_parser()
@@ -25,6 +26,8 @@ def main():
     failed = False
     for uploadable in args.torrents:
         try:
+            if type(uploadable) is str:
+                uploadable = uploadable.decode(sys.stdout.encoding)
             if is_magnet(uploadable):
                 client.upload_magnet_link(uploadable)
                 util.report_message("%s submitted to seedbox" % uploadable)
