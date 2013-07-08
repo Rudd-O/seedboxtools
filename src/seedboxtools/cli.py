@@ -43,6 +43,8 @@ def get_parser():
 def get_uploader_parser():
     '''returns argument parser for uploader tool'''
     parser = argparse.ArgumentParser(description='Upload torrents and magnet links to seedbox.')
+    parser.add_argument('-d', '--debug', action="store_true", default=False,
+                        help='enable tracebacks for errors')
     parser.add_argument('torrents', metavar='TORRENT', nargs='+',
                         help='torrent file or magnet link')
     return parser

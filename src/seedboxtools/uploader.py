@@ -34,6 +34,8 @@ def main():
             else:
                 raise ValueError("%s is not a torrent or a magnet link" % uploadable)
         except Exception as e:
+            if args.debug:
+                raise
             extramessage = ""
             if isinstance(e, ConnectionError):
                 if e.args[0].errno == -2:
