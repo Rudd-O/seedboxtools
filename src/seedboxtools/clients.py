@@ -57,6 +57,7 @@ class TorrentFluxClient(SeedboxClient):
     def __init__(self,
             local_download_dir,
             hostname,
+            ssh_hostname,
             base_dir,
             incoming_dir,
             torrentinfo_path,
@@ -64,13 +65,14 @@ class TorrentFluxClient(SeedboxClient):
         ):
         SeedboxClient.__init__(self, local_download_dir)
         self.hostname = hostname
+        self.ssh_hostname = hostname
         self.base_dir = base_dir
         self.incoming_dir = incoming_dir
         self.fluxcli_path = fluxcli_path
         self.torrentinfo_path = torrentinfo_path
 
-        self.getssh = partial(util.ssh_getstdout, hostname)
-        self.passthru = partial(util.ssh_passthru, hostname)
+        self.getssh = partial(util.ssh_getstdout, ssh_hostname)
+        self.passthru = partial(util.ssh_passthru, ssh_hostname)
 
     def get_finished_torrents(self):
         stdout = self.getssh([self.fluxcli, "transfers"])
@@ -96,7 +98,7 @@ class TorrentFluxClient(SeedboxClient):
         # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
         path = os.path.join(self.incoming_dir, filename)
         path = util.shell_quote(path)
-        path = "%s:%s" % (self.hostname, path)
+        path = "%s:%s" % (self.ssh_hostname, path)
         opts = ["-arvzP"]
         cmdline = [ "rsync" ] + opts + [ path , self.local_download_dir ]
         returncode = util.passthru(cmdline)
@@ -122,6 +124,7 @@ class TransmissionClient(SeedboxClient):
     def __init__(self,
             local_download_dir,
             hostname,
+            ssh_hostname,
             torrents_dir,
             incoming_dir,
             torrentinfo_path,
@@ -131,14 +134,15 @@ class TransmissionClient(SeedboxClient):
         ):
         SeedboxClient.__init__(self, local_download_dir)
         self.hostname = hostname
+        self.ssh_hostname = ssh_hostname
         self.torrents_dir = torrents_dir
         self.incoming_dir = incoming_dir
         self.transmission_remote_path = transmission_remote_path
         self.transmission_remote_user = transmission_remote_user
         self.transmission_remote_password = transmission_remote_password
 
-        self.getssh = partial(util.ssh_getstdout, hostname)
-        self.passthru = partial(util.ssh_passthru, hostname)
+        self.getssh = partial(util.ssh_getstdout, ssh_hostname)
+        self.passthru = partial(util.ssh_passthru, ssh_hostname)
 
     def get_finished_torrents(self):
         stdout = util.getstdout([
@@ -175,7 +179,7 @@ class TransmissionClient(SeedboxClient):
         # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
         path = os.path.join(self.incoming_dir, filename)
         path = util.shell_quote(path)
-        path = "%s:%s" % (self.hostname, path)
+        path = "%s:%s" % (self.ssh_hostname, path)
         opts = ["-arvzP"]
         cmdline = [ "rsync" ] + opts + [ path , self.local_download_dir ]
         returncode = util.passthru(cmdline)
@@ -215,16 +219,20 @@ class PulsedMediaClient(SeedboxClient):
     def __init__(self,
             local_download_dir,
             hostname,
+            ssh_hostname,
             login,
             password,
+            label
         ):
         SeedboxClient.__init__(self, local_download_dir)
         self.hostname = hostname
+        self.ssh_hostname = ssh_hostname
         self.login = login
         self.password = password
+        self.label = label.strip()
 
-        self.getssh = partial(util.ssh_getstdout, hostname)
-        self.passthru = partial(util.ssh_passthru, hostname)
+        self.getssh = partial(util.ssh_getstdout, ssh_hostname)
+        self.passthru = partial(util.ssh_passthru, ssh_hostname)
 
     def get_finished_torrents(self):
 	r = requests.post(
@@ -255,7 +263,10 @@ class PulsedMediaClient(SeedboxClient):
 		completed_chunks = int(torrent[6])
 		size_chunks = int(torrent[7])
 		done = completed_chunks/size_chunks
-		if done == 1: done_torrents.append( (key, "Done") )
+        if self.label is not '' and self.label != torrent[14]:
+            done = 0
+
+        if done == 1: done_torrents.append( (key, "Done") )
         return done_torrents
 
     def get_file_name(self, torrentname):
@@ -269,7 +280,7 @@ class PulsedMediaClient(SeedboxClient):
         # or else this will bomb out with an attribute error
         # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
         path = util.shell_quote(self.path_for_filename_cache[filename])
-        path = "%s:%s" % (self.hostname, path)
+        path = "%s:%s" % (self.ssh_hostname, path)
         opts = ["-arvzP"]
         cmdline = [ "rsync" ] + opts + [ path , self.local_download_dir ]
         returncode = util.passthru(cmdline)

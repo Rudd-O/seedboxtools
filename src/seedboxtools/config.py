@@ -14,6 +14,7 @@ def get_default_config():
     cfg.general.client = 'TransmissionClient'
     cfg.general.local_download_dir = os.path.join(os.path.expanduser("~"), "Downloads")
     cfg[cfg.general.client].hostname = ''
+    cfg[cfg.general.client].ssh_hostname = ''
     cfg[cfg.general.client].torrents_dir = '/var/lib/transmission/torrents'
     cfg[cfg.general.client].incoming_dir = '/var/lib/transmission/Downloads'
     cfg[cfg.general.client].transmission_remote_path = 'transmission-remote'
@@ -80,6 +81,10 @@ def wizard():
               "Torrent server host name",
               cfg[cfg.general.client].hostname,
         )
+        cfg[cfg.general.client].hostname = raw_input_default(
+              "Server SSH host name",
+              cfg[cfg.general.client].ssh_hostname,
+        )
         cfg[cfg.general.client].torrents_dir = raw_input_default(
               "Directory where the torrent server stores torrent files",
               cfg[cfg.general.client].torrents_dir,
@@ -109,6 +114,10 @@ def wizard():
               "Torrent server host name",
               cfg[cfg.general.client].hostname,
         )
+        cfg[cfg.general.client].hostname = raw_input_default(
+              "Server SSH host name",
+              cfg[cfg.general.client].ssh_hostname,
+        )
         cfg[cfg.general.client].base_dir = raw_input_default(
               "Base directory where TorrentFlux stores its .transfers directory",
               cfg[cfg.general.client].base_dir,
@@ -129,6 +138,14 @@ def wizard():
         cfg[cfg.general.client].hostname = raw_input_default(
               "Hostname",
               lambda: cfg[cfg.general.client].hostname,
+        )
+        cfg[cfg.general.client].ssh_hostname = raw_input_default(
+              "Server SSH host name",
+              cfg[cfg.general.client].ssh_hostname,
+        )
+        cfg[cfg.general.client].label = raw_input_default(
+              "Label to download (use space if you don't want to specify a label)",
+              cfg[cfg.general.client].label,
         )
         cfg[cfg.general.client].login = raw_input_default(
               "Login",
