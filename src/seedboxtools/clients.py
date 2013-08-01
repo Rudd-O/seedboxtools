@@ -259,15 +259,16 @@ class PulsedMediaClient(SeedboxClient):
 		raise AttributeError, "normally this would be a 'list' object has no attribute 'values', but in reality something went wrong with the unserialization of JSON values, which were serialized from %r and were supposed to come from the 't' bag of JSON data -- this happens when PulsedMedia's server fucks up"%r.content
 	done_torrents = []
 	for key,torrent in torrents.items():
-		#filename = torrent[25]
-		completed_chunks = int(torrent[6])
-		size_chunks = int(torrent[7])
-		done = completed_chunks/size_chunks
-        if self.label is not '' and self.label != torrent[14]:
-            done = 0
+                #filename = torrent[25]
+                completed_chunks = int(torrent[6])
+                size_chunks = int(torrent[7])
+                done = completed_chunks/size_chunks
+                if self.label is not '' and self.label != torrent[14]:
+                    done = 0
 
-        if done == 1: done_torrents.append( (key, "Done") )
-        return done_torrents
+                if done == 1: done_torrents.append( (key, "Done") )
+
+            return done_torrents
 
     def get_file_name(self, torrentname):
 	# in this implementation, get_finished_torrents MUST BE called first

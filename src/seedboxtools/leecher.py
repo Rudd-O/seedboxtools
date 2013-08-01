@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 '''
 This is the code in charge of downloading proper
 '''
