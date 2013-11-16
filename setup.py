@@ -42,6 +42,9 @@ setup(
 					]),
 	classifiers = classifiers,
 	packages = ["seedboxtools"],
+	data_files = [
+		("/usr/share/applications", ["uploadtorrents.desktop"]),
+	],
 	scripts = ["bin/configleecher", 'bin/leechtorrents', 'bin/uploadtorrents'],
 	keywords = "seedbox TorrentFlux Transmission torrents",
 	requires = ["iniparse", "requests (>=0.11.1)"],

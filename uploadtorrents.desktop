@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Upload torrents to seedbox
+Exec=uploadtorrents %U
+Icon=application-x-executable
+Terminal=false
+TryExec=uploadtorrents
+Type=Application
+MimeType=application/x-bittorrent;x-scheme-handler/magnet;
+Categories=Network;FileTransfer;P2P;
+X-AppInstall-Keywords=torrent 
