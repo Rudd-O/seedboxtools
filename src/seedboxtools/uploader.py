@@ -27,7 +27,7 @@ def main():
     for uploadable in args.torrents:
         try:
             if type(uploadable) is str:
-                uploadable = uploadable.decode(sys.stdout.encoding)
+                uploadable = uploadable.decode(sys.getfilesystemencoding())
             if is_magnet(uploadable):
                 client.upload_magnet_link(uploadable)
                 util.report_message("%s submitted to seedbox" % uploadable)
