@@ -13,6 +13,8 @@ class SeedboxClientException(Exception): pass
 
 class TemporaryMalfunction(SeedboxClientException): pass
 
+class Misconfiguration(SeedboxClientException): pass
+
 class InvalidTorrent(SeedboxClientException):
     def __str__(self):
         return "invalid torrent file or magnet link: %r" % self.message
@@ -238,6 +240,11 @@ class PulsedMediaClient(SeedboxClient):
 			"Server is experiencing a temporary 500 status code: %s"%\
 			r.content
 		)
+        if r.status_code == 404:
+                raise Misconfiguration(
+                        "Server address (%s) is likely misconfigured: %s"%\
+                        self.hostname
+                )
 	assert r.status_code == 200, "Non-OK status code while retrieving get_finished_torrents: %r"%r.status_code
 	data = json.loads(r.content)
 	torrents = data["t"]
@@ -305,6 +312,11 @@ class PulsedMediaClient(SeedboxClient):
             raise TemporaryMalfunction(
                 "Server is experiencing a temporary 500 status code: %s"%\
                 r.content
+            )
+        if r.status_code == 404:
+            raise Misconfiguration(
+                "Server address (%s) is likely misconfigured: %s"%\
+                self.hostname
             )
         if 'addTorrentSuccess' in r.content:
             return
