@@ -276,7 +276,7 @@ class PulsedMediaClient(SeedboxClient):
         # or else this will bomb out with an attribute error
         # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
         path = util.shell_quote(self.path_for_filename_cache[filename])
-        path = "%s:%s" % (self.hostname, path)
+        path = "%s@%s:%s" % (self.login, self.hostname, path)
         opts = ["-arvzP"]
         cmdline = [ "rsync" ] + opts + [ path , self.local_download_dir ]
         returncode = util.passthru(cmdline)
