@@ -225,8 +225,8 @@ class PulsedMediaClient(SeedboxClient):
         self.login = login
         self.password = password
 
-        self.getssh = partial(util.ssh_getstdout, hostname)
-        self.passthru = partial(util.ssh_passthru, hostname)
+        self.getssh = partial(util.ssh_getstdout, "%s@%s"%(login,hostname))
+        self.passthru = partial(util.ssh_passthru, "%s@%s"%(login,hostname))
 
     def get_finished_torrents(self):
 	r = requests.post(
