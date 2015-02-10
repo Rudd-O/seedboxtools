@@ -248,6 +248,9 @@ class PulsedMediaClient(SeedboxClient):
 	assert r.status_code == 200, "Non-OK status code while retrieving get_finished_torrents: %r"%r.status_code
 	data = json.loads(r.content)
 	torrents = data["t"]
+	if not torrents:
+		#  There are no torrents to download, or so the server says.
+		return []
 	self.torrents_cache = torrents
 	try:
 		self.path_for_filename_cache = dict([
