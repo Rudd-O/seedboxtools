@@ -127,7 +127,7 @@ def wizard():
         )
     elif cfg.general.client == 'PulsedMedia':
         cfg[cfg.general.client].hostname = raw_input_default(
-              "Hostname",
+              "Hostname (x.pulsedmedia.com)",
               lambda: cfg[cfg.general.client].hostname,
         )
         cfg[cfg.general.client].login = raw_input_default(

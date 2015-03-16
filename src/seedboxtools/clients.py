@@ -230,7 +230,7 @@ class PulsedMediaClient(SeedboxClient):
 
     def get_finished_torrents(self):
 	r = requests.post(
-		"https://%s/rutorrent/plugins/httprpc/action.php"%self.hostname,
+		"https://%s/user-%s/rutorrent/plugins/httprpc/action.php" % (self.hostname, self.login),
 		auth=(self.login, self.password),
 		data="mode=list",
 		verify=False,
@@ -306,7 +306,7 @@ class PulsedMediaClient(SeedboxClient):
 
     def _upload(self, **params):
         r = requests.post(
-            "https://%s/rutorrent/php/addtorrent.php"%self.hostname,
+            "https://%s/user-%s/rutorrent/php/addtorrent.php" % (self.hostname, self.login),
             auth=(self.login, self.password),
             verify=False,
             **params
