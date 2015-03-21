@@ -99,7 +99,7 @@ class TorrentFluxClient(SeedboxClient):
         path = os.path.join(self.incoming_dir, filename)
         path = util.shell_quote(path)
         path = "%s:%s" % (self.hostname, path)
-        opts = ["-arvzP"]
+        opts = ["-rtlDrvzP"]
         cmdline = [ "rsync" ] + opts + [ path , self.local_download_dir ]
         returncode = util.passthru(cmdline)
         return returncode
@@ -178,7 +178,7 @@ class TransmissionClient(SeedboxClient):
         path = os.path.join(self.incoming_dir, filename)
         path = util.shell_quote(path)
         path = "%s:%s" % (self.hostname, path)
-        opts = ["-arvzP"]
+        opts = ["-rtlDrvzP"]
         cmdline = [ "rsync" ] + opts + [ path , self.local_download_dir ]
         returncode = util.passthru(cmdline)
         return returncode
@@ -280,7 +280,7 @@ class PulsedMediaClient(SeedboxClient):
         # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
         path = util.shell_quote(self.path_for_filename_cache[filename])
         path = "%s@%s:%s" % (self.login, self.hostname, path)
-        opts = ["-arvzP"]
+        opts = ["-rtlDrvzP"]
         cmdline = [ "rsync" ] + opts + [ path , self.local_download_dir ]
         returncode = util.passthru(cmdline)
         return returncode
