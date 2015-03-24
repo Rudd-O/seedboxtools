@@ -228,6 +228,15 @@ class PulsedMediaClient(SeedboxClient):
         self.getssh = partial(util.ssh_getstdout, "%s@%s"%(login,hostname))
         self.passthru = partial(util.ssh_passthru, "%s@%s"%(login,hostname))
 
+        # Here we disable the certificate warnings that take place with
+        # PulsedMedia's less-than-nice SSL certificates.  Tragic, but the
+        # alternative is to keep spamming the log forever.
+        try:
+                import requests.packages.urllib3
+                requests.packages.urllib3.disable_warnings()
+        except (ImportError, Exception):
+                pass
+
     def get_finished_torrents(self):
 	r = requests.post(
 		"https://%s/user-%s/rutorrent/plugins/httprpc/action.php" % (self.hostname, self.login),
