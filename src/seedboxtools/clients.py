@@ -274,6 +274,10 @@ class PulsedMediaClient(SeedboxClient):
 			(os.path.basename(torrent[25]), torrent[25])
 			for torrent in torrents.values()
 		])
+		self.hash_for_filename_cache = dict([
+			(os.path.basename(torrent[25]), thehash)
+			for thehash, torrent in torrents.items()
+		])
 	except AttributeError, e:
 		raise AttributeError, "normally this would be a 'list' object has no attribute 'values', but in reality something went wrong with the unserialization of JSON values, which were serialized from %r and were supposed to come from the 't' bag of JSON data -- this happens when PulsedMedia's server fucks up"%r.content
 	done_torrents = []
@@ -286,7 +290,7 @@ class PulsedMediaClient(SeedboxClient):
 			# If it does not match the label, the torrent is
 			# never "done".
 			done = 0
-		if done == 1: done_torrents.append((key, "Done"))
+		if done == 1: done_torrents.append((key, "Done" if int(torrent[0]) == 0 else "Seeding"))
         return done_torrents
 
     def get_file_name(self, torrentname):
@@ -351,6 +355,115 @@ class PulsedMediaClient(SeedboxClient):
                 raise InvalidTorrent(params['files']['torrent_file'][0])
         else:
             assert 0, (r.status_code, r.content)
+
+    def remove_remote_download(self, filename):
+        # in this implementation, get_finished_torrents MUST BE called first
+        # or else this will bomb out with an attribute error
+        thehash = self.hash_for_filename_cache[filename]
+        payload_template = """<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>system.multicall</methodName>
+  <params>
+    <param>
+      <value>
+        <array>
+          <data>
+            <value>
+              <struct>
+                <member>
+                  <name>methodName</name>
+                  <value>
+                    <string>d.set_custom5</string>
+                  </value>
+                </member>
+                <member>
+                  <name>params</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>%s</string>
+                        </value>
+                        <value>
+                          <string>1</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>methodName</name>
+                  <value>
+                    <string>d.delete_tied</string>
+                  </value>
+                </member>
+                <member>
+                  <name>params</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>%s</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+              </struct>
+            </value>
+            <value>
+              <struct>
+                <member>
+                  <name>methodName</name>
+                  <value>
+                    <string>d.erase</string>
+                  </value>
+                </member>
+                <member>
+                  <name>params</name>
+                  <value>
+                    <array>
+                      <data>
+                        <value>
+                          <string>%s</string>
+                        </value>
+                      </data>
+                    </array>
+                  </value>
+                </member>
+              </struct>
+            </value>
+          </data>
+        </array>
+      </value>
+    </param>
+  </params>
+</methodCall>"""
+        payload = payload_template % (thehash, thehash, thehash)
+        headers = {'Content-Type': "text/xml; charset=UTF-8"}
+        r = requests.post(
+            "https://%s/user-%s/rutorrent/plugins/httprpc/action.php" % (self.hostname, self.login),
+            auth=(self.login, self.password),
+            data=payload,
+            verify=False,
+            headers=headers,
+        )
+        if r.status_code == 500:
+            raise TemporaryMalfunction(
+                "Server is experiencing a temporary 500 status code: %s" % \
+                r.content
+            )
+            if r.status_code == 404:
+                    raise Misconfiguration(
+                            "Server address (%s) is likely misconfigured: %s" % \
+                            self.hostname
+                    )
+        assert r.status_code == 200, "Non-OK status code while retrieving get_finished_torrents: %r" % r.status_code
+        _ = r.text
 
 
 clients = {
