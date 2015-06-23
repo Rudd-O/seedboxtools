@@ -104,6 +104,13 @@ configuration.  There are various ways to run the script:
 * with cron
 * in a systemd unit file as a service
 
+In all cases, the leecher tool will figure out finished torrents, download
+them to the download folder you configured during the `configleecher` stage,
+then create a file named `.<downloaded file>.done` within the download folder,
+to indicate that the torrent has finished downloading.  This marker helps the
+leecher tool remember which torrents were fully downloaded, so that it doesn't
+attempt to download them yet again.
+
 Manually
 ________
 
@@ -153,6 +160,22 @@ Then run as root::
     systemctl daemon-reload
     systemctl enable leechtorrents.service
     systemctl start leechtorrents.service
+
+Removing completed torrents once they have been fully downloaded
+----------------------------------------------------------------
+
+The leecher tool has the ability to remove completed downloads that aren't
+seeding from your seedbox.  Just pass the command line option `-r` to the
+leecher tool `leechtorrents`, and it will automatically remove from the
+seedbox each torrent it successfully downloads, so long as the torrent
+is not seeding anymore.  This feature helps conserve disk space in your
+seedbox.  Note that, once a torrent has been removed from the seedbox,
+its corresponding `.<downloaded file>.done` file on the download folder
+will be eliminated, to clear up clutter in the download folder.
+
+Example::
+
+    leechtorrents -r
 
 How to upload torrents to your seedbox
 --------------------------------------

@@ -2,7 +2,7 @@
 This is the code in charge of downloading proper
 '''
 
-import os, signal, sys, time, traceback
+import errno, os, signal, sys, time, traceback
 from seedboxtools import util, cli, config
 from seedboxtools.clients import TemporaryMalfunction, Misconfiguration
 from requests.exceptions import ConnectionError
@@ -64,6 +64,11 @@ def download(client, remove_finished=False):
                     util.report_message("%s from %s is complete but still seeding, not removing" % (filename, torrent))
                 else:
                     client.remove_remote_download(filename)
+                    try:
+                        os.unlink(download_lockfile)
+                    except OSError, e:
+                        if e.errno != errno.ENOENT:
+                            raise
                     util.report_message("Removal of %s complete" % filename)
 
 sighandled = False
