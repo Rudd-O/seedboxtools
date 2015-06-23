@@ -211,3 +211,17 @@ def report_error(text):
     if use_linux_gui():
         notify_send(text.capitalize(), transient=False)
     print >> sys.stderr, text
+
+def executable_exists(path):
+    """Checks that an executable is executable, along PATH
+    or, if specified as relative or absolute path name, directly."""
+    envpath = os.getenv("PATH", "/usr/local/bin:/usr/bin:/bin")
+    PATH = envpath.split(os.path.pathsep)
+    for d in PATH:
+        if os.path.sep in path:
+            fullname = path
+        else:
+            fullname = path.join(d, path)
+        if os.access(fullname, os.X_OK):
+            return fullname
+    return None

@@ -29,6 +29,11 @@ def get_parser():
         action='store_true', dest='remove_finished', default=False
     )
     parser.add_option(
+        "-s", '--run-processor-program',
+        help="run program after completing download, passing path to download as first argument",
+        action='store', dest='run_processor_program', default=None
+    )
+    parser.add_option(
         "-l", '--lock',
         help="lock working directory; useful for cron executions (combine with --daemon to prevent cron from jamming until downloads are finished)",
         action='store_true', dest='lock', default=False

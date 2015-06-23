@@ -177,6 +177,47 @@ Example::
 
     leechtorrents -r
 
+Running a program after a torrent is finished downloading
+---------------------------------------------------------
+
+The leecher tool has the capacity to run a program (non-interactively) right
+after a download is completed, and will also pass the full path to the file
+or directory that was downloaded to the program.  This program will be run
+right after the download is done, and (if you have enabled said option)
+before the torrent is removed from the seedbox, and its marker file removed
+from the download folder.
+
+To activate the running of the post-download program, pass the option `-s`
+followed by the path to the program you want to run.
+
+Here is an example that runs a particular program to process downloads::
+
+    leechtorrents -s /usr/local/bin/blend-linux-distributions
+
+In this example, right after your favorite Linux distribution torrent
+(which surely is `Fedora-22.iso`) is done and saved to your download folder
+`/srv/seedbox`, `leechtorrents` will execute the following command line::
+
+    /usr/local/bin/blend-linux-distributions /srv/seedbox/Fedora-22.iso
+
+The standard output and standard error of the program are passed to the
+standard output and standard error of `leechtorrents`, which may be your
+terminal, a logging service, or the log file set aside for logging purposes
+by the `leechtorrents` command line parameter `-l`.  Standard input will
+be nullified, so no option for interacting with the program will exist.
+
+Note that your program will only ever execute once per downloaded torrent.
+Also note that the return value of your program will be ignored.  Finally,
+please note that if your program doesn't finish, this will block further
+downloads, so make sure to equip your program with a timeout (perhaps using
+`SIGALRM` or such mechanisms).
+
+If you want to run a shell or other language script against the downloaded
+file or directory, you are advised to write a script file and pass that as
+the argument to `-s`, then use the first argument to the script file as
+the path to the downloaded file (it's usually `$1` in sh-like languages,
+like it is `sys.argv[1]` in Python).
+
 How to upload torrents to your seedbox
 --------------------------------------
 

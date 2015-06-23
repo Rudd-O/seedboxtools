@@ -2,13 +2,13 @@
 This is the code in charge of downloading proper
 '''
 
-import errno, os, signal, sys, time, traceback
+import errno, os, signal, sys, subprocess, time, traceback
 from seedboxtools import util, cli, config
 from seedboxtools.clients import TemporaryMalfunction, Misconfiguration
 from requests.exceptions import ConnectionError
 
 # start execution here
-def download(client, remove_finished=False):
+def download(client, remove_finished=False, run_processor_program=None):
     for torrent, status, filename in client.get_files_to_download():
         # Set loop vars up
         download_lockfile = ".%s.done" % filename
@@ -56,6 +56,22 @@ def download(client, remove_finished=False):
             fully_downloaded = True
             util.mark_dir_complete(filename)
             util.report_message("Download of %s complete" % filename)
+
+            if run_processor_program is not None:
+                try:
+                    retval = subprocess.call(
+                        [run_processor_program, filename],
+                        stdin=file(os.devnull)
+                    )
+                    util.report_message(
+                        "Execution of %s %s exited with return value%s" % (
+                             run_processor_program, filename, retval,
+                        )
+                    )
+                except OSError, e:
+                    util.report_error("Program %r is not executable: %s" % (
+                        run_processor_program, e
+                    ))
 
         else:
 
@@ -117,6 +133,13 @@ def mainloop():
         util.report_error("Cannot change to download directory %r: %s" % (local_download_dir, e))
         sys.exit(4)
 
+    # check processor program availability
+    if opts.run_processor_program is not None:
+        program = util.executable_exists(opts.run_processor_program)
+        if program is None:
+            util.report_error("Program %r is not executable" % opts.run_processor_program)
+            sys.exit(4)
+
     if opts.logfile:
         try:
             file(opts.logfile, "a", 0)
@@ -153,7 +176,8 @@ def mainloop():
         try:
             return download(
                client=client,
-               remove_finished=opts.remove_finished
+               remove_finished=opts.remove_finished,
+               run_processor_program=opts.run_processor_program,
             )
         except IOError, e:
             if e.errno == 4: pass
