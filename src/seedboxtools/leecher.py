@@ -73,19 +73,17 @@ def download(client, remove_finished=False, run_processor_program=None):
                         run_processor_program, e
                     ))
 
-        else:
-
-            if remove_finished:
-                if seeding:
-                    util.report_message("%s from %s is complete but still seeding, not removing" % (filename, torrent))
-                else:
-                    client.remove_remote_download(filename)
-                    try:
-                        os.unlink(download_lockfile)
-                    except OSError, e:
-                        if e.errno != errno.ENOENT:
-                            raise
-                    util.report_message("Removal of %s complete" % filename)
+        if remove_finished:
+            if seeding:
+                util.report_message("%s from %s is complete but still seeding, not removing" % (filename, torrent))
+            else:
+                client.remove_remote_download(filename)
+                try:
+                    os.unlink(download_lockfile)
+                except OSError, e:
+                    if e.errno != errno.ENOENT:
+                        raise
+                util.report_message("Removal of %s complete" % filename)
 
 sighandled = False
 def sighandler(signum, frame):
