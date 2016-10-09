@@ -106,6 +106,9 @@ def mainloop():
     # command line parameter checks
     if args: parser.error("This command accepts no arguments")
 
+    if opts.lock and opts.lock_homedir:
+        parser.error("--lock and --lock-homedir are mutually exclusive")
+
     if opts.run_every is not False:
         try:
             opts.run_every = int(opts.run_every)
@@ -163,12 +166,17 @@ def mainloop():
     signal.signal(signal.SIGINT, sighandler)
 
     # lockfile check
-    if opts.lock:
+    if opts.lock or opts.lock_homedir:
+        if opts.lock:
             torrentleecher_lockfile = ".torrentleecher.lock"
-            result = util.lock(torrentleecher_lockfile)
-            if not result:
-                util.report_error("Another process has a lock on the download directory")
-                sys.exit(0)
+        else:
+            torrentleecher_lockfile = os.path.join(
+                os.path.expanduser("~"), ".torrentleecher.lock"
+            )
+        result = util.lock(torrentleecher_lockfile)
+        if not result:
+            util.report_error("Another process has a lock on the download directory")
+            sys.exit(0)
 
     def do_guarded():
         try:

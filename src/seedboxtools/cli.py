@@ -39,6 +39,11 @@ def get_parser():
         action='store_true', dest='lock', default=False
     )
     parser.add_option(
+        "-h", '--lock-homedir',
+        help="lock home directory; alternative (mutually exclusive) to --lock",
+        action='store_true', dest='lock_homedir', default=False
+    )
+    parser.add_option(
         "-q", '--quiet',
         help="do not print anything, except for errors",
         action='store_true', dest='quiet', default=False
