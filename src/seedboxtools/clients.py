@@ -9,6 +9,16 @@ import os
 import requests
 import json
 
+
+# We must present some form of timeout or else the request can hang forever.
+# The documentation insists production code must specify it.
+def post(*args, **kwargs):
+    if "timeout" not in kwargs:
+        kwargs = dict(kwargs)
+        kwargs["timeout"] = 15
+    return requests.post(*args, **kwargs)
+
+
 class SeedboxClientException(Exception): pass
 
 class TemporaryMalfunction(SeedboxClientException): pass
@@ -246,7 +256,7 @@ class PulsedMediaClient(SeedboxClient):
                 pass
 
     def get_finished_torrents(self):
-	r = requests.post(
+	r = post(
 		"https://%s/user-%s/rutorrent/plugins/httprpc/action.php" % (self.hostname, self.login),
 		auth=(self.login, self.password),
 		data="mode=list",
@@ -330,7 +340,7 @@ class PulsedMediaClient(SeedboxClient):
         return self._upload(files=files)
 
     def _upload(self, **params):
-        r = requests.post(
+        r = post(
             "https://%s/user-%s/rutorrent/php/addtorrent.php" % (self.hostname, self.login),
             auth=(self.login, self.password),
             verify=False,
@@ -445,7 +455,7 @@ class PulsedMediaClient(SeedboxClient):
 </methodCall>"""
         payload = payload_template % (thehash, thehash, thehash)
         headers = {'Content-Type': "text/xml; charset=UTF-8"}
-        r = requests.post(
+        r = post(
             "https://%s/user-%s/rutorrent/plugins/httprpc/action.php" % (self.hostname, self.login),
             auth=(self.login, self.password),
             data=payload,
