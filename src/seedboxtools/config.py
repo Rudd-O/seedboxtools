@@ -52,12 +52,12 @@ def raw_input_default(prompt, default, choices=None):
         choices_str = ''
     prompt = "Hint: leave empty to select the default, enter a period to select an empty value\n" + prompt
     string = prompt + " (%s%s): " % (choices_str, default)
-    _ = raw_input(string)
+    _ = input(string)
     choice = _ if _ else default
     if _ == ".":
         choice = ""
     if choices and choice not in choices:
-        print choice, "is not in the choices, please try again"
+        print(choice, "is not in the choices, please try again")
         return raw_input_default(prompt, default, choices)
     return choice
 
@@ -69,7 +69,7 @@ def wizard():
         f = open(default_filename)
         cfg = load_config(f)
     except (IOError, OSError):
-        print "Couldn't load configuration.  Creating a new configuration file."
+        print("Couldn't load configuration.  Creating a new configuration file.")
     cfg.general.local_download_dir = raw_input_default(
           "Local download directory",
           cfg.general.local_download_dir,
@@ -160,14 +160,14 @@ def wizard():
         )
     else:
         assert 0, "Not reached"
-    print "Writing this configuration to %s" % default_filename
-    print "===============8<================"
-    print cfg
-    print "===============>8================"
-    oldumask = os.umask(0077)
+    print("Writing this configuration to %s" % default_filename)
+    print("===============8<================")
+    print(cfg)
+    print("===============>8================")
+    oldumask = os.umask(0o077)
     save_config(cfg, open(default_filename, "w"))
     os.umask(oldumask)
-    print """
+    print("""
 The configuration wizard is done.  Next steps:
 
 * If your seedbox provider requires you to SSH into the seedbox in order to
@@ -187,4 +187,4 @@ and never have to worry about manually downloading your latest torrents from
 your seedbox!  Make sure to read the README file of this program to get tips
 on how to run it periodically or permanently in your computer.
 
-Enjoy!"""
+Enjoy!""")

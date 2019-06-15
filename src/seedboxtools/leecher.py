@@ -49,8 +49,8 @@ def download(client, remove_finished=False, run_processor_program=None):
                     return 1
             # Rsync successful
             # mark file as downloaded
-            try: file(download_lockfile, "w").write("Done")
-            except OSError, e:
+            try: open(download_lockfile, "w").write("Done")
+            except OSError as e:
                 if e.errno != 17: raise
             # report successful download
             fully_downloaded = True
@@ -61,14 +61,14 @@ def download(client, remove_finished=False, run_processor_program=None):
                 try:
                     retval = subprocess.call(
                         [run_processor_program, filename],
-                        stdin=file(os.devnull)
+                        stdin=open(os.devnull)
                     )
                     util.report_message(
                         "Execution of %s %s exited with return value%s" % (
                              run_processor_program, filename, retval,
                         )
                     )
-                except OSError, e:
+                except OSError as e:
                     util.report_error("Program %r is not executable: %s" % (
                         run_processor_program, e
                     ))
@@ -80,7 +80,7 @@ def download(client, remove_finished=False, run_processor_program=None):
                 client.remove_remote_download(filename)
                 try:
                     os.unlink(download_lockfile)
-                except OSError, e:
+                except OSError as e:
                     if e.errno != errno.ENOENT:
                         raise
                 util.report_message("Removal of %s complete" % filename)
@@ -114,13 +114,13 @@ def mainloop():
             opts.run_every = int(opts.run_every)
             if opts.run_every < 1:
                 raise ValueError
-        except ValueError, e:
+        except ValueError as e:
             parser.error("option --run-every must be a positive integer")
 
     # check config availability and load configuration
     try:
         config_fobject = open(config.default_filename)
-    except (IOError, OSError), e:
+    except (IOError, OSError) as e:
         util.report_error("Cannot load configuration (%s) -- run configleecher first" % (e))
         sys.exit(7)
     cfg = config.load_config(config_fobject)
@@ -130,7 +130,7 @@ def mainloop():
     # check download dir and log file availability
     try:
         os.chdir(local_download_dir)
-    except (IOError, OSError), e:
+    except (IOError, OSError) as e:
         util.report_error("Cannot change to download directory %r: %s" % (local_download_dir, e))
         sys.exit(4)
 
@@ -143,8 +143,8 @@ def mainloop():
 
     if opts.logfile:
         try:
-            file(opts.logfile, "a", 0)
-        except (IOError, OSError), e:
+            open(opts.logfile, "a")
+        except (IOError, OSError) as e:
             util.report_error("Cannot open log file %r: %s" % (opts.logfile, e))
             sys.exit(4)
 
@@ -158,7 +158,7 @@ def mainloop():
         # non-daemonizing version of the above block
         os.close(1)
         os.close(2)
-        sys.stdout = file(opts.logfile, "a", 0)
+        sys.stdout = open(opts.logfile, "a")
         sys.stderr = sys.stderr
         os.dup2(1, 2)
 
@@ -185,19 +185,19 @@ def mainloop():
                remove_finished=opts.remove_finished,
                run_processor_program=opts.run_processor_program,
             )
-        except IOError, e:
+        except IOError as e:
             if e.errno == 4: pass
             else: traceback.print_exc()
             return 8
-        except Misconfiguration, e:
+        except Misconfiguration as e:
             util.report_error(str(e))
             traceback.print_exc()
             return 16
-        except TemporaryMalfunction, e:
+        except TemporaryMalfunction as e:
             util.report_error(str(e))
-        except ConnectionError, e:
+        except ConnectionError as e:
             util.report_error(str(e))
-        except Exception, e:
+        except Exception as e:
             raise
 
     retvalue = 0
@@ -210,7 +210,7 @@ def mainloop():
         while not sighandled:
             retvalue = do_guarded()
             if not sighandled: util.report_message("Sleeping %s seconds" % opts.run_every)
-            for _ in xrange(opts.run_every):
+            for _ in range(opts.run_every):
                 if not sighandled: time.sleep(1)
         util.report_message("Download of finished torrents complete")
     if sighandled: return 0

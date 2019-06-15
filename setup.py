@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 from setuptools import setup
 import os
@@ -11,7 +11,7 @@ for line in open(path_to_main_file):
 		version = line.split()[-1].strip("'").strip('"')
 		break
 else:
-	raise ValueError, '"__version__" not found in "src/seedboxtools/__init__.py"'
+	raise ValueError('"__version__" not found in "src/seedboxtools/__init__.py"')
 readme = open(path_to_readme).read(-1)
 
 classifiers = [
@@ -22,8 +22,8 @@ classifiers = [
 'Intended Audience :: System Administrators',
 'License :: OSI Approved :: GNU General Public License (GPL)',
 'Operating System :: POSIX :: Linux',
-'Programming Language :: Python :: 2 :: Only',
-'Programming Language :: Python :: 2.7',
+'Programming Language :: Python :: 3 :: Only',
+'Programming Language :: Python :: 3.7',
 'Topic :: Communications :: File Sharing',
 'Topic :: Utilities',
 ]

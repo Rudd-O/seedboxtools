@@ -13,14 +13,14 @@ def shell_quote(shellarg):
 
 def getstdout(cmdline):
         p = Popen(cmdline, stdout=PIPE)
-        output = p.communicate()[0]
-        if p.returncode != 0: raise Exception, "Command %s return code %s" % (cmdline, p.returncode)
+        output = p.communicate()[0].decode("utf-8")
+        if p.returncode != 0: raise Exception("Command %s return code %s" % (cmdline, p.returncode))
         return output
 
 def getstdoutstderr(cmdline, inp=None): # return stoud and stderr in a single string object
         p = Popen(cmdline, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-        output = p.communicate(inp)[0]
-        if p.returncode != 0: raise Exception, "Command %s return code %s" % (cmdline, p.returncode)
+        output = p.communicate(inp)[0].decode("utf-8")
+        if p.returncode != 0: raise Exception("Command %s return code %s" % (cmdline, p.returncode))
         return output
 
 def passthru(cmdline):
@@ -39,7 +39,7 @@ def ssh_passthru(hostname, cmdline):
     return passthru(["ssh", "-o", "BatchMode yes", "-o", "ForwardX11 no", hostname, cmd])
 
 def firstcomponent(path):
-    if not path: raise ValueError, "path cannot be empty: %r" % path
+    if not path: raise ValueError("path cannot be empty: %r" % path)
     oldpath = path
     while True:
         path = os.path.dirname(path)
@@ -58,12 +58,12 @@ def daemonize(logfile=os.devnull):
     logfile = os.path.join(pwd, logfile)
 
     try: pid = os.fork()
-    except OSError, e: raise Exception, "%s [%d]" % (e.strerror, e.errno)
+    except OSError as e: raise Exception("%s [%d]" % (e.strerror, e.errno))
 
     if (pid == 0):         # The first child.
         os.setsid()
         try: pid = os.fork()          # Fork a second child.
-        except OSError, e: raise Exception, "%s [%d]" % (e.strerror, e.errno)
+        except OSError as e: raise Exception("%s [%d]" % (e.strerror, e.errno))
 
         if (pid == 0):     # The second child.
             os.chdir("/")
@@ -90,9 +90,9 @@ def daemonize(logfile=os.devnull):
         try: f.close()
         except: pass
 
-    sys.stdin = file("/dev/null", "r")
-    sys.stdout = file(logfile, "a", 0)
-    sys.stderr = file(logfile, "a", 0)
+    sys.stdin = open("/dev/null", "r")
+    sys.stdout = open(logfile, "a")
+    sys.stderr = open(logfile, "a")
     os.dup2(1, 2)
 
     return(0)
@@ -106,7 +106,7 @@ def lock(lockfile):
     try:
         f = open(lockfile, 'w')
         fcntl.lockf(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except IOError, e:
+    except IOError as e:
         if e.errno == 11: return False
         else: raise
     return True
@@ -122,7 +122,7 @@ def set_dir_icon(filename, iconname):
     text = """[Desktop Entry]
 Icon = % s
 """ % iconname
-    try: file(os.path.join(filename, ".directory"), "w").write(text)
+    try: open(os.path.join(filename, ".directory"), "w").write(text)
     except: pass
 
 def mark_dir_complete(filename): set_dir_icon(filename, "dialog-ok-apply.png")
@@ -205,12 +205,12 @@ def report_message(text):
     if verbose:
         if use_linux_gui():
             notify_send(text.capitalize())
-        print >> sys.stderr, text
+        print(text, file=sys.stderr)
 
 def report_error(text):
     if use_linux_gui():
         notify_send(text.capitalize(), transient=False)
-    print >> sys.stderr, text
+    print(text, file=sys.stderr)
 
 def executable_exists(path):
     """Checks that an executable is executable, along PATH

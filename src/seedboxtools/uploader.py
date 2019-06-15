@@ -10,7 +10,7 @@ def main():
     # check config availability and load configuration
     try:
         config_fobject = open(config.default_filename)
-    except (IOError, OSError), e:
+    except (IOError, OSError) as e:
         util.report_error("Cannot load configuration (%s) -- run configleecher first" % (e))
         sys.exit(7)
     cfg = config.load_config(config_fobject)

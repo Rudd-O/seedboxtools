@@ -123,13 +123,13 @@ class TorrentFluxClient(SeedboxClient):
         if returncode == 1: return False
         elif returncode == 0: return True
         elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
-        else: raise AssertionError, "exists on server returned %s" % returncode
+        else: raise AssertionError("exists on server returned %s" % returncode)
 
     def remove_remote_download(self, filename):
         returncode = self.passthru(["rm", "-rf", os.path.join(self.incoming_dir, filename)])
         if returncode == 0: return
         elif returncode == -2: raise IOError(4, "remove_remote_download interrupted")
-        else: raise AssertionError, "remove dirs only returned %s" % returncode
+        else: raise AssertionError("remove dirs only returned %s" % returncode)
 
 
 class TransmissionClient(SeedboxClient):
@@ -204,7 +204,7 @@ class TransmissionClient(SeedboxClient):
         if returncode == 1: return False
         elif returncode == 0: return True
         elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
-        else: raise AssertionError, "exists on server returned %s" % returncode
+        else: raise AssertionError("exists on server returned %s" % returncode)
 
     def remove_remote_download(self, filename):
         if not hasattr(self, "torrent_to_id_map"): self.get_finished_torrents()
@@ -224,7 +224,7 @@ class TransmissionClient(SeedboxClient):
         ])
         if returncode == 0: return
         elif returncode == -2: raise IOError(4, "remove_remote_download interrupted")
-        else: raise AssertionError, "remove dirs only returned %s" % returncode
+        else: raise AssertionError("remove dirs only returned %s" % returncode)
 
 
 class PulsedMediaClient(SeedboxClient):
@@ -256,58 +256,58 @@ class PulsedMediaClient(SeedboxClient):
                 pass
 
     def get_finished_torrents(self):
-	r = post(
-		"https://%s/user-%s/rutorrent/plugins/httprpc/action.php" % (self.hostname, self.login),
-		auth=(self.login, self.password),
-		data="mode=list",
-		verify=False,
-	)
-	if r.status_code == 500:
-		raise TemporaryMalfunction(
-			"Server is experiencing a temporary 500 status code: %s"%\
-			r.content
-		)
+        r = post(
+                "https://%s/user-%s/rutorrent/plugins/httprpc/action.php" % (self.hostname, self.login),
+                auth=(self.login, self.password),
+                data="mode=list",
+                verify=False,
+        )
+        if r.status_code == 500:
+                raise TemporaryMalfunction(
+                        "Server is experiencing a temporary 500 status code: %s"%\
+                        r.content
+                )
         if r.status_code == 404:
                 raise Misconfiguration(
                         "Server address (%s) is likely misconfigured: %s"%\
                         self.hostname
                 )
-	assert r.status_code == 200, "Non-OK status code while retrieving get_finished_torrents: %r"%r.status_code
-	data = json.loads(r.content)
-	torrents = data["t"]
-	if not torrents:
-		#  There are no torrents to download, or so the server says.
-		return []
-	self.torrents_cache = torrents
-	try:
-		self.path_for_filename_cache = dict([
-			(os.path.basename(torrent[25]), torrent[25])
-			for torrent in torrents.values()
-		])
-		self.hash_for_filename_cache = dict([
-			(os.path.basename(torrent[25]), thehash)
-			for thehash, torrent in torrents.items()
-		])
-	except AttributeError, e:
-		raise AttributeError, "normally this would be a 'list' object has no attribute 'values', but in reality something went wrong with the unserialization of JSON values, which were serialized from %r and were supposed to come from the 't' bag of JSON data -- this happens when PulsedMedia's server fucks up"%r.content
-	done_torrents = []
-	for key,torrent in torrents.items():
-		#filename = torrent[25]
-		completed_chunks = int(torrent[6])
-		size_chunks = int(torrent[7])
-		done = completed_chunks/size_chunks
-		if self.label and self.label != torrent[14]:
-			# If it does not match the label, the torrent is
-			# never "done".
-			done = 0
-		if done == 1: done_torrents.append((key, "Done" if int(torrent[0]) == 0 else "Seeding"))
+        assert r.status_code == 200, "Non-OK status code while retrieving get_finished_torrents: %r"%r.status_code
+        data = json.loads(r.content)
+        torrents = data["t"]
+        if not torrents:
+                #  There are no torrents to download, or so the server says.
+                return []
+        self.torrents_cache = torrents
+        try:
+                self.path_for_filename_cache = dict([
+                        (os.path.basename(torrent[25]), torrent[25])
+                        for torrent in list(torrents.values())
+                ])
+                self.hash_for_filename_cache = dict([
+                        (os.path.basename(torrent[25]), thehash)
+                        for thehash, torrent in list(torrents.items())
+                ])
+        except AttributeError as e:
+                raise AttributeError("normally this would be a 'list' object has no attribute 'values', but in reality something went wrong with the unserialization of JSON values, which were serialized from %r and were supposed to come from the 't' bag of JSON data -- this happens when PulsedMedia's server fucks up"%r.content)
+        done_torrents = []
+        for key,torrent in list(torrents.items()):
+                #filename = torrent[25]
+                completed_chunks = int(torrent[6])
+                size_chunks = int(torrent[7])
+                done = completed_chunks/size_chunks
+                if self.label and self.label != torrent[14]:
+                        # If it does not match the label, the torrent is
+                        # never "done".
+                        done = 0
+                if done == 1: done_torrents.append((key, "Done" if int(torrent[0]) == 0 else "Seeding"))
         return done_torrents
 
     def get_file_name(self, torrentname):
-	# in this implementation, get_finished_torrents MUST BE called first
-	# or else this will bomb out with an attribute error
-	torrent = self.torrents_cache[torrentname]
-	return os.path.basename(torrent[25])
+        # in this implementation, get_finished_torrents MUST BE called first
+        # or else this will bomb out with an attribute error
+        torrent = self.torrents_cache[torrentname]
+        return os.path.basename(torrent[25])
 
     def transfer(self, filename):
         # in this implementation, get_finished_torrents MUST BE called first
@@ -329,7 +329,7 @@ class PulsedMediaClient(SeedboxClient):
         if returncode == 1: return False
         elif returncode == 0: return True
         elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
-        else: raise AssertionError, "exists on server returned %s" % returncode
+        else: raise AssertionError("exists on server returned %s" % returncode)
 
     def upload_magnet_link(self, magnet_link):
         return self._upload(data={'url': magnet_link})
