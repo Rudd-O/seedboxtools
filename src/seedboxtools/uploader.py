@@ -14,7 +14,6 @@ def main():
         util.report_error("Cannot load configuration (%s) -- run configleecher first" % (e))
         sys.exit(7)
     cfg = config.load_config(config_fobject)
-    local_download_dir = cfg.general.local_download_dir
     client = config.get_client(cfg)
 
     # separate the wheat from the chaff
@@ -27,7 +26,10 @@ def main():
     for uploadable in args.torrents:
         try:
             if type(uploadable) is str:
-                uploadable = uploadable.decode(sys.getfilesystemencoding())
+                try:
+                    uploadable = uploadable.decode(sys.getfilesystemencoding())
+                except AttributeError:
+                    pass
             if is_magnet(uploadable):
                 client.upload_magnet_link(uploadable)
                 util.report_message("%s submitted to seedbox" % uploadable)

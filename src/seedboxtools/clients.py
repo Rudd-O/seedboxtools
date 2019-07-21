@@ -349,22 +349,22 @@ class PulsedMediaClient(SeedboxClient):
         if r.status_code == 500:
             raise TemporaryMalfunction(
                 "Server is experiencing a temporary 500 status code: %s"%\
-                r.content
+                r.text
             )
         if r.status_code == 404:
             raise Misconfiguration(
                 "Server address (%s) is likely misconfigured: %s"%\
                 self.hostname
             )
-        if 'addTorrentSuccess' in r.content:
+        if 'addTorrentSuccess' in r.text:
             return
-        elif 'addTorrentFailed' in r.content:
+        elif 'addTorrentFailed' in r.text:
             if "data" in params:
                 raise InvalidTorrent(params['data']['url'])
             else:
                 raise InvalidTorrent(params['files']['torrent_file'][0])
         else:
-            assert 0, (r.status_code, r.content)
+            assert 0, (r.status_code, r.text)
 
     def remove_remote_download(self, filename):
         # in this implementation, get_finished_torrents MUST BE called first
