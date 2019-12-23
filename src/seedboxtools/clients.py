@@ -8,6 +8,7 @@ import re
 import os
 import requests
 import json
+import subprocess
 
 
 # We must present some form of timeout or else the request can hang forever.
@@ -17,6 +18,15 @@ def post(*args, **kwargs):
         kwargs = dict(kwargs)
         kwargs["timeout"] = 15
     return requests.post(*args, **kwargs)
+
+
+def remote_test_minus_e(path):
+    cmd = ["test", "-e", path]
+    returncode = self.passthru(cmd)
+    if returncode == 1: return False
+    elif returncode == 0: return True
+    elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
+    else: raise subprocess.CalledProcessError(returncode, ["ssh", "<host>"] + cmd)
 
 
 class SeedboxClientException(Exception): pass
@@ -118,12 +128,7 @@ class TorrentFluxClient(SeedboxClient):
 
     def exists_on_server(self, filename):
         path = os.path.join(self.incoming_dir, filename)
-        cmd = ["test", "-e", path]
-        returncode = self.passthru(cmd)
-        if returncode == 1: return False
-        elif returncode == 0: return True
-        elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
-        else: raise AssertionError("exists on server returned %s" % returncode)
+        return remote_test_minus_e(path)
 
     def remove_remote_download(self, filename):
         returncode = self.passthru(["rm", "-rf", os.path.join(self.incoming_dir, filename)])
@@ -199,12 +204,7 @@ class TransmissionClient(SeedboxClient):
 
     def exists_on_server(self, filename):
         path = os.path.join(self.incoming_dir, filename)
-        cmd = ["test", "-e", path]
-        returncode = self.passthru(cmd)
-        if returncode == 1: return False
-        elif returncode == 0: return True
-        elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
-        else: raise AssertionError("exists on server returned %s" % returncode)
+        return remote_test_minus_e(path)
 
     def remove_remote_download(self, filename):
         if not hasattr(self, "torrent_to_id_map"): self.get_finished_torrents()
@@ -324,12 +324,7 @@ class PulsedMediaClient(SeedboxClient):
         # in this implementation, get_finished_torrents MUST BE called first
         # or else this will bomb out with an attribute error
         path = self.path_for_filename_cache[filename]
-        cmd = ["test", "-e", path] # the self.passthru takes care of quoting
-        returncode = self.passthru(cmd)
-        if returncode == 1: return False
-        elif returncode == 0: return True
-        elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
-        else: raise AssertionError("exists on server returned %s" % returncode)
+        return remote_test_minus_e(path)
 
     def upload_magnet_link(self, magnet_link):
         return self._upload(data={'url': magnet_link})

@@ -96,6 +96,34 @@ def sighandler(signum, frame):
         signal.signal(signum, oldhandler)
         sighandled = True
 
+
+def do_guarded(client, remove_finished, run_processor_program):
+    global sighandled
+    try:
+        return download(
+            client=client,
+            remove_finished=remove_finished,
+            run_processor_program=run_processor_program,
+        )
+    except IOError as e:
+        if e.errno == 4: pass
+        else: traceback.print_exc()
+        return 8
+    except Misconfiguration as e:
+        util.report_error(str(e))
+        traceback.print_exc()
+        return 16
+    except TemporaryMalfunction as e:
+        util.report_error(str(e))
+    except ConnectionError as e:
+        util.report_error(str(e))
+    except CalledProcessError as e:
+        if not sighandled:
+            raise
+    except Exception as e:
+        raise
+
+
 def mainloop():
     global sighandled
 
@@ -178,32 +206,12 @@ def mainloop():
             util.report_error("Another process has a lock on the download directory")
             sys.exit(0)
 
-    def do_guarded():
-        try:
-            return download(
-               client=client,
-               remove_finished=opts.remove_finished,
-               run_processor_program=opts.run_processor_program,
-            )
-        except IOError as e:
-            if e.errno == 4: pass
-            else: traceback.print_exc()
-            return 8
-        except Misconfiguration as e:
-            util.report_error(str(e))
-            traceback.print_exc()
-            return 16
-        except TemporaryMalfunction as e:
-            util.report_error(str(e))
-        except ConnectionError as e:
-            util.report_error(str(e))
-        except Exception as e:
-            raise
-
     retvalue = 0
     if opts.run_every is False:
         util.report_message("Starting download of finished torrents")
-        retvalue = do_guarded()
+        retvalue = do_guarded(client,
+                              remove_finished=opts.remove_finished,
+                              run_processor_program=opts.run_processor_program)
         util.report_message("Download of finished torrents complete")
     else:
         util.report_message("Starting daemon for download of finished torrents")
