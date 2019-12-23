@@ -206,17 +206,19 @@ def mainloop():
             util.report_error("Another process has a lock on the download directory")
             sys.exit(0)
 
+    dg = lambda: do_guarded(client,
+                            remove_finished=opts.remove_finished,
+                            run_processor_program=opts.run_processor_program)
+
     retvalue = 0
     if opts.run_every is False:
         util.report_message("Starting download of finished torrents")
-        retvalue = do_guarded(client,
-                              remove_finished=opts.remove_finished,
-                              run_processor_program=opts.run_processor_program)
+        retvalue = dg()
         util.report_message("Download of finished torrents complete")
     else:
         util.report_message("Starting daemon for download of finished torrents")
         while not sighandled:
-            retvalue = do_guarded()
+            retvalue = dg()
             if not sighandled: util.report_message("Sleeping %s seconds" % opts.run_every)
             for _ in range(opts.run_every):
                 if not sighandled: time.sleep(1)
