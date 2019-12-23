@@ -117,7 +117,7 @@ def do_guarded(client, remove_finished, run_processor_program):
         util.report_error(str(e))
     except ConnectionError as e:
         util.report_error(str(e))
-    except CalledProcessError as e:
+    except subprocess.CalledProcessError as e:
         if not sighandled:
             raise
     except Exception as e:
