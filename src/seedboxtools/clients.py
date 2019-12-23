@@ -20,9 +20,9 @@ def post(*args, **kwargs):
     return requests.post(*args, **kwargs)
 
 
-def remote_test_minus_e(path):
+def remote_test_minus_e(passthru, path):
     cmd = ["test", "-e", path]
-    returncode = self.passthru(cmd)
+    returncode = passthru(cmd)
     if returncode == 1: return False
     elif returncode == 0: return True
     elif returncode == -2: raise IOError(4, "exists_on_server interrupted")
@@ -128,7 +128,7 @@ class TorrentFluxClient(SeedboxClient):
 
     def exists_on_server(self, filename):
         path = os.path.join(self.incoming_dir, filename)
-        return remote_test_minus_e(path)
+        return remote_test_minus_e(self.passthru, path)
 
     def remove_remote_download(self, filename):
         returncode = self.passthru(["rm", "-rf", os.path.join(self.incoming_dir, filename)])
@@ -204,7 +204,7 @@ class TransmissionClient(SeedboxClient):
 
     def exists_on_server(self, filename):
         path = os.path.join(self.incoming_dir, filename)
-        return remote_test_minus_e(path)
+        return remote_test_minus_e(self.passthru, path)
 
     def remove_remote_download(self, filename):
         if not hasattr(self, "torrent_to_id_map"): self.get_finished_torrents()
@@ -324,7 +324,7 @@ class PulsedMediaClient(SeedboxClient):
         # in this implementation, get_finished_torrents MUST BE called first
         # or else this will bomb out with an attribute error
         path = self.path_for_filename_cache[filename]
-        return remote_test_minus_e(path)
+        return remote_test_minus_e(self.passthru, path)
 
     def upload_magnet_link(self, magnet_link):
         return self._upload(data={'url': magnet_link})
