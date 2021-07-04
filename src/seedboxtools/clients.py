@@ -36,8 +36,13 @@ class TemporaryMalfunction(SeedboxClientException): pass
 class Misconfiguration(SeedboxClientException): pass
 
 class InvalidTorrent(SeedboxClientException):
+
+    def __init__(self, message):
+        self.message = message
+
     def __str__(self):
         return "invalid torrent file or magnet link: %r" % self.message
+
 
 class SeedboxClient:
 
