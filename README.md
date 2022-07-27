@@ -150,8 +150,18 @@ Enable the respective unit file for your user:
 sudo systemctl enable leechtorrents@$USER
 ```
 
-You can configure command line options in `/etc/default/leechtorrents` as well
-as with `~/.config/leechtorrents-environment`.
+You can configure system-wide command line options in
+`/etc/default/leechtorrents` (see `/usr/etc/default/leechtorrents` for info
+on the variables you can set).
+
+If you need to set up a per-user environment for command-line options, you
+can do it with a systemd override file:
+
+```
+# Text of /etc/systemd/system/leechtorrents@myuser.service
+[Service]
+EnvironmentFile=/home/myuser/.config/leechtorrents-environment
+```
 
 # Removing completed torrents once they have been fully downloaded
 
