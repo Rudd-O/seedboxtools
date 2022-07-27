@@ -1,0 +1,8 @@
+# Default leechtorrents command line options for the service.
+# You can also override this in $HOME/.config/leechtorrents-environment
+# for the specific user this unit is enabled.
+#
+# The defaults are -q for quiet and -t 60 for checking the torrent server
+# every 60 seconds.
+
+LEECHTORRENTS_OPTS="-q -t 60"
