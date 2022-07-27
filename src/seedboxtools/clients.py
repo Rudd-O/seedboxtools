@@ -11,8 +11,6 @@ import json
 import subprocess
 
 
-RSYNC_OPTS = "-rtlDvzP"
-
 # We must present some form of timeout or else the request can hang forever.
 # The documentation insists production code must specify it.
 def post(*args, **kwargs):
@@ -60,12 +58,18 @@ class SeedboxClient:
         self.local_download_dir = local_download_dir
 
     def get_finished_torrents(self):
-        # This returns a series of tuples (torrentdescriptor, "Done") for every torrent that is done
-        # If there is a temporary error, it raises TemporaryMalfunction
+        """
+        Returns a series of tuples (torrentdescriptor, "Done")
+        for every torrent that is done.
+        If there is a temporary error, it raises TemporaryMalfunction.
+        """
         raise NotImplementedError
 
     def get_file_name(self, torrentname):
-        # This returns the file or path name to the torrent given a torrentdescriptor
+        """
+        Returns the file or path name to the torrent given a
+        torrentdescriptor.
+        """
         raise NotImplementedError
 
     def transfer(self, filename):
@@ -78,7 +82,7 @@ class SeedboxClient:
         raise NotImplementedError
 
     def get_files_to_download(self):
-        """Returns iterator with get_finished_torrents result"""
+        """Returns iterator with get_finished_torrents result."""
         torrents = self.get_finished_torrents()
         for name, status in torrents:
             yield (name, status, self.get_file_name(name))
@@ -117,7 +121,7 @@ class TorrentFluxClient(SeedboxClient):
         stdout = stdout.splitlines()[2:-5]
         stdout.reverse()
         stdout = [
-            re.match("^- (.+) - [0123456789\.]+ [KMG]B - (Seeding|Done)", line)
+            re.match("^- (.+) - [0123456789.]+ [KMG]B - (Seeding|Done)", line)
             for line in stdout
         ]
         pairs = [(match.group(1), match.group(2)) for match in stdout if match]
@@ -128,24 +132,25 @@ class TorrentFluxClient(SeedboxClient):
         stdout = self.getssh(
             ["env", "LANG=C", self.torrentinfo_path, fullpath]
         ).splitlines()
-        filenames = [l[22:] for l in stdout if l.startswith("file name...........: ")]
+
+        def isf(x):
+            return x.startswith("file name...........: ")
+
+        def isd(x):
+            return x.startswith("directory name......: ")
+
+        filenames = [f[22:] for f in stdout if isf(f)]
         if not len(filenames):
             _ = stdout.index("files...............:")
             # we disregard the actual filenames, we now want the dir name
-            # filenames = [ l[3:] for l in stdout[filelistheader+1:] if l.startswith("   ") ]
-            filenames = [
-                l[22:] for l in stdout if l.startswith("directory name......: ")
-            ]
-        assert len(filenames) is 1, "Wrong length of filenames: %r" % filenames
+            filenames = [f[22:] for f in stdout if isd(f)]
+        assert len(filenames) == 1, "Wrong length of filenames: %r" % filenames
         return filenames[0]
 
     def transfer(self, filename):
-        # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
         path = os.path.join(self.incoming_dir, filename)
         path = "%s:%s" % (self.ssh_hostname, path)
-        cmdline = ["rsync", RSYNC_OPTS] + [path, self.local_download_dir]
-        returncode = util.passthru(cmdline)
-        return returncode
+        return util.rsync(path, self.local_download_dir)
 
     def exists_on_server(self, filename):
         path = os.path.join(self.incoming_dir, filename)
@@ -189,20 +194,34 @@ class TransmissionClient(SeedboxClient):
         self.passthru = partial(util.ssh_passthru, self.ssh_hostname)
 
     def get_finished_torrents(self):
+        u, p = (
+            self.transmission_remote_user,
+            self.transmission_remote_password,
+        )
         stdout = util.getstdout(
             [
                 self.transmission_remote_path,
                 self.hostname,
-                "--auth=%s:%s"
-                % (self.transmission_remote_user, self.transmission_remote_password),
+                f"--auth={u}:{p}",
                 "-l",
             ]
         )
         stdout = stdout.splitlines()[1:-1]
         stdout.reverse()
         stdout = [x.split() + [x[70:]] for x in stdout]
-        donetoseeding = lambda t: "Seeding" if t != "Stopped" else t
-        stdout = [(x[0], donetoseeding(x[8]), x[-1]) for x in stdout if x[4] in "Done"]
+
+        def donetoseeding(t):
+            return "Seeding" if t != "Stopped" else t
+
+        stdout = [
+            (
+                x[0],
+                donetoseeding(x[8]),
+                x[-1],
+            )
+            for x in stdout
+            if x[4] in "Done"
+        ]
         self.torrent_to_id_map = dict((x[2], x[0]) for x in stdout)
         pairs = [(x[2], x[1]) for x in stdout]
         return pairs
@@ -212,14 +231,17 @@ class TransmissionClient(SeedboxClient):
         if not hasattr(self, "torrent_to_id_map"):
             self.get_finished_torrents()
         torrent_id = self.torrent_to_id_map[torrentname]
+        u, p = (
+            self.transmission_remote_user,
+            self.transmission_remote_password,
+        )
         stdout = util.getstdout(
             [
                 "env",
                 "LANG=C",
                 self.transmission_remote_path,
                 self.hostname,
-                "--auth=%s:%s"
-                % (self.transmission_remote_user, self.transmission_remote_password),
+                f"--auth={u}:{p}",
                 "-t",
                 torrent_id,
                 "-f",
@@ -229,12 +251,9 @@ class TransmissionClient(SeedboxClient):
         return filename
 
     def transfer(self, filename):
-        # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
         path = os.path.join(self.incoming_dir, filename)
         path = "%s:%s" % (self.ssh_hostname, path)
-        cmdline = ["rsync", RSYNC_OPTS] + [path, self.local_download_dir]
-        returncode = util.passthru(cmdline)
-        return returncode
+        return util.rsync(path, self.local_download_dir)
 
     def exists_on_server(self, filename):
         path = os.path.join(self.incoming_dir, filename)
@@ -250,14 +269,17 @@ class TransmissionClient(SeedboxClient):
             )
         torrent = self.filename_to_torrent_map[filename]
         torrent_id = self.torrent_to_id_map[torrent]
+        u, p = (
+            self.transmission_remote_user,
+            self.transmission_remote_password,
+        )
         returncode = util.passthru(
             [
                 "env",
                 "LANG=C",
                 self.transmission_remote_path,
                 self.hostname,
-                "--auth=%s:%s"
-                % (self.transmission_remote_user, self.transmission_remote_password),
+                f"--auth={u}:{p}",
                 "-t",
                 torrent_id,
                 "--remove-and-delete",
@@ -288,8 +310,14 @@ class PulsedMediaClient(SeedboxClient):
         self.password = password
         self.label = label.strip()
 
-        self.getssh = partial(util.ssh_getstdout, "%s@%s" % (login, self.ssh_hostname))
-        self.passthru = partial(util.ssh_passthru, "%s@%s" % (login, self.ssh_hostname))
+        self.getssh = partial(
+            util.ssh_getstdout,
+            "%s@%s" % (login, self.ssh_hostname),
+        )
+        self.passthru = partial(
+            util.ssh_passthru,
+            "%s@%s" % (login, self.ssh_hostname),
+        )
 
         # Here we disable the certificate warnings that take place with
         # PulsedMedia's less-than-nice SSL certificates.  Tragic, but the
@@ -311,11 +339,11 @@ class PulsedMediaClient(SeedboxClient):
         )
         if r.status_code == 500:
             raise TemporaryMalfunction(
-                "Server is experiencing a temporary 500 status code: %s" % r.content
+                "Server returned a temporary 500 status code: %s" % r.content
             )
         if r.status_code == 404:
             raise Misconfiguration(
-                "Server address (%s) is likely misconfigured: %s" % self.hostname
+                "Server address (%s) may be misconfigured: %s" % self.hostname
             )
         assert r.status_code == 200, (
             "Non-OK status code while retrieving get_finished_torrents: %r"
@@ -342,8 +370,8 @@ class PulsedMediaClient(SeedboxClient):
             )
         except AttributeError as e:
             raise AttributeError(
-                "normally this would be a 'list' object has no attribute 'values', but in reality something went wrong with the unserialization of JSON values, which were serialized from %r and were supposed to come from the 't' bag of JSON data -- this happens when PulsedMedia's server fucks up"
-                % r.content
+                "normally this would be a 'list' object has no attribute 'values', but in reality something went wrong with the unserialization of JSON values, which were serialized from %r and were supposed to come from the 't' bag of JSON data -- this happens when PulsedMedia's server fucks up (%s)"
+                % (r.content, e)
             )
         done_torrents = []
         for key, torrent in list(torrents.items()):
@@ -370,12 +398,9 @@ class PulsedMediaClient(SeedboxClient):
     def transfer(self, filename):
         # in this implementation, get_finished_torrents MUST BE called first
         # or else this will bomb out with an attribute error
-        # need to single-quote the *path* for the purposes of the remote shell so it doesn't fail, because the path is used in the remote shell
         path = self.path_for_filename_cache[filename]
         path = "%s@%s:%s" % (self.login, self.ssh_hostname, path)
-        cmdline = ["rsync", RSYNC_OPTS] + [path, self.local_download_dir]
-        returncode = util.passthru(cmdline)
-        return returncode
+        return util.rsync(path, self.local_download_dir)
 
     def exists_on_server(self, filename):
         # in this implementation, get_finished_torrents MUST BE called first
@@ -387,10 +412,9 @@ class PulsedMediaClient(SeedboxClient):
         return self._upload(data={"url": magnet_link})
 
     def upload_torrent(self, torrent_path):
-        files = {
-            "torrent_file": (os.path.basename(torrent_path), open(torrent_path, "rb"))
-        }
-        return self._upload(files=files)
+        n = os.path.basename(torrent_path)
+        with open(torrent_path, "rb") as tf:
+            return self._upload(files={"torrent_file": (n, tf)})
 
     def _upload(self, **params):
         r = post(
@@ -398,15 +422,15 @@ class PulsedMediaClient(SeedboxClient):
             % (self.hostname, self.login),
             auth=(self.login, self.password),
             verify=False,
-            **params
+            **params,
         )
         if r.status_code == 500:
             raise TemporaryMalfunction(
-                "Server is experiencing a temporary 500 status code: %s" % r.text
+                "Server returned a temporary 500 status code: %s" % r.text
             )
         if r.status_code == 404:
             raise Misconfiguration(
-                "Server address (%s) is likely misconfigured: %s" % self.hostname
+                "Server address (%s) may be misconfigured: %s" % self.hostname
             )
         if "addTorrentSuccess" in r.text:
             return
@@ -517,12 +541,12 @@ class PulsedMediaClient(SeedboxClient):
         )
         if r.status_code == 500:
             raise TemporaryMalfunction(
-                "Server is experiencing a temporary 500 status code: %s" % r.content
+                "Server returned a temporary 500 status code: %s" % r.content
             )
-            if r.status_code == 404:
-                raise Misconfiguration(
-                    "Server address (%s) is likely misconfigured: %s" % self.hostname
-                )
+        if r.status_code == 404:
+            raise Misconfiguration(
+                "Server address (%s) may be misconfigured: %s" % self.hostname
+            )
         assert r.status_code == 200, (
             "Non-OK status code while retrieving get_finished_torrents: %r"
             % r.status_code
