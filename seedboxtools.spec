@@ -5,7 +5,7 @@
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
 Name:           seedboxtools
-Version:        1.5.0
+Version:        1.6.0
 Release:        %{mybuildnumber}%{?dist}
 Summary:        A tool to automate downloading finished torrents from a seedbox
 
