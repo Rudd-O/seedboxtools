@@ -151,7 +151,9 @@ sudo systemctl enable leechtorrents@$USER
 ```
 
 You can configure command line options in `/etc/default/leechtorrents` as well
-as with `~/.config/leechtorrents-environment`.
+as with `~/.config/leechtorrents-environment`.  The environment variable
+`$LEECHTORRENTS_OPTS` is defined in either of those files, and carries the
+command-line options that will be used by the program.
 
 # Removing completed torrents once they have been fully downloaded
 
