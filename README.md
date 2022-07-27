@@ -147,13 +147,22 @@ Enable the respective unit file for your user:
 
 ```
 # $USER contains the user that will run leechtorrents.
-sudo systemctl enable leechtorrents@$USER
+# Only run this after configuring the torrent leecher!
+sudo systemctl enable --now leechtorrents@$USER
 ```
 
 You can configure command line options in `/etc/default/leechtorrents` as well
 as with `~/.config/leechtorrents-environment`.  The environment variable
 `$LEECHTORRENTS_OPTS` is defined in either of those files, and carries the
 command-line options that will be used by the program.
+
+You can verify if there are any errors using:
+
+```
+sudo systemctl status leechtorrents@$USER
+# and
+sudo journalctl -b -u leechtorrents@$USER
+```
 
 # Removing completed torrents once they have been fully downloaded
 
