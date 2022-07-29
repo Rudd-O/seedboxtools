@@ -38,7 +38,7 @@ def passthru(cmdline: list[str]) -> int:
 
 
 def rsync(source: str, destination: str) -> int:
-    RSYNC_OPTS = ["-rtlDvzP", "--chmod=go+rX --chmod=u+rwX --executability"]
+    RSYNC_OPTS = ["-rtlDvzP", "--chmod=go+rX", "--chmod=u+rwX", "--executability"]
     cmdline = ["rsync"] + RSYNC_OPTS + ["--", source, destination]
     return passthru(cmdline)
 
