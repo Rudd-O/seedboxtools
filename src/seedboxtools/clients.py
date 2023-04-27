@@ -2,14 +2,16 @@
 Client classes for seedboxtools
 """
 
-from functools import partial
 import seedboxtools.util as util
 import re
 import os
 import requests
 import json
 import subprocess
+import xmlrpc.client
 
+from functools import partial
+from urllib.parse import quote
 
 # We must present some form of timeout or else the request can hang forever.
 # The documentation insists production code must specify it.
@@ -303,6 +305,7 @@ class PulsedMediaClient(SeedboxClient):
         ssh_hostname="",
         label="",
     ):
+        """Client for ruTorrent servers default in PulsedMedia seedboxes."""
         SeedboxClient.__init__(self, local_download_dir)
         self.hostname = hostname
         self.ssh_hostname = ssh_hostname or hostname
@@ -335,7 +338,6 @@ class PulsedMediaClient(SeedboxClient):
             % (self.hostname, self.login),
             auth=(self.login, self.password),
             data="mode=list",
-            verify=False,
         )
         if r.status_code == 500:
             raise TemporaryMalfunction(
@@ -421,7 +423,6 @@ class PulsedMediaClient(SeedboxClient):
             "https://%s/user-%s/rutorrent/php/addtorrent.php"
             % (self.hostname, self.login),
             auth=(self.login, self.password),
-            verify=False,
             **params,
         )
         if r.status_code == 500:
@@ -430,128 +431,46 @@ class PulsedMediaClient(SeedboxClient):
             )
         if r.status_code == 404:
             raise Misconfiguration(
-                "Server address (%s) may be misconfigured: %s" % self.hostname
+                "Server address (%s) may be misconfigured: %s"
+                % (self.hostname, r.status_code)
             )
+
         if "addTorrentSuccess" in r.text:
             return
-        elif "addTorrentFailed" in r.text:
+
+        if "addTorrentFailed" in r.text:
             if "data" in params:
                 raise InvalidTorrent(params["data"]["url"])
-            else:
-                raise InvalidTorrent(params["files"]["torrent_file"][0])
-        else:
-            assert 0, (r.status_code, r.text)
+            raise InvalidTorrent(params["files"]["torrent_file"][0])
+
+        assert 0, (r.status_code, r.text)
 
     def remove_remote_download(self, filename):
         # in this implementation, get_finished_torrents MUST BE called first
         # or else this will bomb out with an attribute error
-        thehash = self.hash_for_filename_cache[filename]
-        payload_template = """<?xml version="1.0" encoding="UTF-8"?>
-<methodCall>
-  <methodName>system.multicall</methodName>
-  <params>
-    <param>
-      <value>
-        <array>
-          <data>
-            <value>
-              <struct>
-                <member>
-                  <name>methodName</name>
-                  <value>
-                    <string>d.set_custom5</string>
-                  </value>
-                </member>
-                <member>
-                  <name>params</name>
-                  <value>
-                    <array>
-                      <data>
-                        <value>
-                          <string>%s</string>
-                        </value>
-                        <value>
-                          <string>1</string>
-                        </value>
-                      </data>
-                    </array>
-                  </value>
-                </member>
-              </struct>
-            </value>
-            <value>
-              <struct>
-                <member>
-                  <name>methodName</name>
-                  <value>
-                    <string>d.delete_tied</string>
-                  </value>
-                </member>
-                <member>
-                  <name>params</name>
-                  <value>
-                    <array>
-                      <data>
-                        <value>
-                          <string>%s</string>
-                        </value>
-                      </data>
-                    </array>
-                  </value>
-                </member>
-              </struct>
-            </value>
-            <value>
-              <struct>
-                <member>
-                  <name>methodName</name>
-                  <value>
-                    <string>d.erase</string>
-                  </value>
-                </member>
-                <member>
-                  <name>params</name>
-                  <value>
-                    <array>
-                      <data>
-                        <value>
-                          <string>%s</string>
-                        </value>
-                      </data>
-                    </array>
-                  </value>
-                </member>
-              </struct>
-            </value>
-          </data>
-        </array>
-      </value>
-    </param>
-  </params>
-</methodCall>"""
-        payload = payload_template % (thehash, thehash, thehash)
-        headers = {"Content-Type": "text/xml; charset=UTF-8"}
-        r = post(
-            "https://%s/user-%s/rutorrent/plugins/httprpc/action.php"
-            % (self.hostname, self.login),
-            auth=(self.login, self.password),
-            data=payload,
-            verify=False,
-            headers=headers,
+        login = quote(self.login, safe="")
+        passw = quote(self.password, safe="")
+        url = (
+            f"https://{login}:{passw}@{self.hostname}/user-{login}"
+            + "/rutorrent/plugins/httprpc/action.php"
         )
-        if r.status_code == 500:
-            raise TemporaryMalfunction(
-                "Server returned a temporary 500 status code: %s" % r.content
-            )
-        if r.status_code == 404:
+        client = xmlrpc.client.ServerProxy(url)
+        infohash = self.hash_for_filename_cache[filename]
+        mcall = xmlrpc.client.MultiCall(client)
+        mcall.d.custom5.set(infohash, "1")
+        mcall.d.delete_tied(infohash)
+        mcall.d.erase(infohash)
+        try:
+            _, delete_tied_result, erase_result = list(mcall())
+        except xmlrpc.client.ProtocolError as exc:
             raise Misconfiguration(
-                "Server address (%s) may be misconfigured: %s" % self.hostname
-            )
-        assert r.status_code == 200, (
-            "Non-OK status code while retrieving get_finished_torrents: %r"
-            % r.status_code
-        )
-        _ = r.text
+                f"Server address ({self.hostname}) may be misconfigured"
+            ) from exc
+        except xmlrpc.client.Fault as exc:
+            raise TemporaryMalfunction("Server returned a fault.") from exc
+
+        assert delete_tied_result == 0, f"Delete tied result {delete_tied_result}"
+        assert erase_result == 0, f"Erase result {erase_result}"
 
 
 clients = {
